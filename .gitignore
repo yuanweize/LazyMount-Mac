@@ -1,0 +1,22 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Personal config (if users create local copies)
+mount_manager.local.sh
