@@ -231,6 +231,227 @@ SMB_USER="employee"
 SMB_SHARE="Projects"
 ```
 
+### 6. 🧠 AI/LLM Model Storage (Ollama, LM Studio, etc.)
+
+Store large language models (LLaMA, Mistral, Qwen, etc.) on a server instead of your Mac's limited SSD:
+
+```bash
+RCLONE_ENABLED="true"
+RCLONE_REMOTE="homeserver:/ai-models"
+RCLONE_MOUNT_POINT="$HOME/.ollama/models"    # Ollama's model directory
+RCLONE_IP="192.168.1.10"
+```
+
+**⚠️ Important: Network Speed Matters!**
+
+LLM models need to be loaded into RAM before inference. If your model isn't in local cache, it must be transferred over the network. A 70B model can be 40GB+, so network speed is crucial:
+
+| Network Type | Speed | Time to Load 40GB Model |
+|--------------|-------|-------------------------|
+| 1 Gigabit (1G) | ~120 MB/s | ~5.5 minutes |
+| **2.5 Gigabit (2.5G)** | ~300 MB/s | **~2.2 minutes** ✅ Recommended |
+| 10 Gigabit (10G) | ~1.2 GB/s | ~33 seconds |
+
+**Hardware Recommendations:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  💡 For Best LLM Experience, Upgrade Your Network!              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Option 1: 2.5G USB Adapter (~$15-30)                          │
+│  ┌─────────┐      ┌─────────────────┐      ┌─────────────┐     │
+│  │   Mac   │─USB─▶│ 2.5G USB Adapter │─────▶│ 2.5G Switch │     │
+│  └─────────┘      └─────────────────┘      └─────────────┘     │
+│                                                                 │
+│  Option 2: 10G Thunderbolt Adapter (~$100-200)                 │
+│  ┌─────────┐      ┌───────────────────┐    ┌─────────────┐     │
+│  │   Mac   │─TB4─▶│ 10G TB Adapter    │───▶│ 10G Switch  │     │
+│  └─────────┘      └───────────────────┘    └─────────────┘     │
+│                                                                 │
+│  ⚠️ Both sides (Mac + Server) must support the speed!          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Cache Settings for LLM (minimize re-downloads):**
+
+```bash
+# In mount_manager.sh, adjust Rclone settings:
+--vfs-cache-max-size 100G    # Large cache for model files
+--vfs-cache-max-age 720h     # Keep cached for 30 days
+--vfs-read-ahead 1G          # Pre-fetch for faster loads
+```
+
+**Why this matters:**
+- LLM apps (Ollama, LM Studio) unload models after idle time (typically 5 minutes)
+- Next query requires reloading the full model from network
+- Fast network = quick model loading = better experience
+
+---
+
+## 📚 Detailed Beginner's Guide
+
+New to terminal/command line? This section walks you through everything step-by-step.
+
+### Step 1: Install Homebrew (Package Manager)
+
+Homebrew is like an "App Store" for command-line tools. If you don't have it:
+
+```bash
+# Open Terminal (Spotlight → type "Terminal" → Enter)
+# Paste this command and press Enter:
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Follow the on-screen instructions
+# When done, verify with:
+brew --version
+```
+
+### Step 2: Install Required Tools
+
+```bash
+# Install Rclone (for cloud/remote mounting)
+brew install rclone
+
+# Install macFUSE (required by Rclone)
+# ⚠️ This requires a restart after installation!
+brew install --cask macfuse
+
+# (Optional) Install Tailscale for remote access
+brew install --cask tailscale
+```
+
+**After installing macFUSE:**
+1. Go to System Settings → Privacy & Security
+2. Scroll down and click "Allow" for the macFUSE extension
+3. **Restart your Mac**
+
+### Step 3: Configure Rclone Remote
+
+```bash
+# Start the configuration wizard
+rclone config
+
+# Example: Setting up SFTP connection to your server
+# n) New remote
+# name> homeserver
+# Storage> sftp
+# host> 192.168.1.10
+# user> your_username
+# (follow prompts for SSH key or password)
+```
+
+**Common remote types:**
+
+| Type | Use Case | Command |
+|------|----------|---------|
+| SFTP | Linux servers, NAS with SSH | `rclone config` → sftp |
+| Google Drive | Google cloud files | `rclone config` → drive |
+| Dropbox | Dropbox files | `rclone config` → dropbox |
+| S3 | AWS/MinIO storage | `rclone config` → s3 |
+
+### Step 4: Test Your Remote
+
+```bash
+# List files on your remote (replace 'homeserver' with your remote name)
+rclone ls homeserver:/
+
+# If you see your files, it's working!
+```
+
+### Step 5: Download and Configure LazyMount
+
+```bash
+# Create Scripts folder
+mkdir -p ~/Scripts
+
+# Download the script
+curl -o ~/Scripts/mount_manager.sh https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/mount_manager.sh
+
+# Make it executable
+chmod +x ~/Scripts/mount_manager.sh
+
+# Open it in TextEdit for easy editing
+open -e ~/Scripts/mount_manager.sh
+```
+
+**In the script, find and edit these lines:**
+
+```bash
+# === RCLONE SETTINGS ===
+RCLONE_ENABLED="true"                          # Enable Rclone? (true/false)
+RCLONE_REMOTE="homeserver:/data"               # ← Your remote name and path
+RCLONE_MOUNT_POINT="$HOME/Mounts/Server"       # ← Where to mount on your Mac
+RCLONE_IP="192.168.1.10"                       # ← IP to ping for network check
+
+# === SMB SETTINGS ===
+SMB_ENABLED="true"                             # Enable SMB? (true/false)
+SMB_IP="192.168.1.100"                         # ← Your NAS/Server IP
+SMB_USER="your_username"                       # ← Your SMB username
+SMB_SHARE="SharedFolder"                       # ← Share folder name
+```
+
+### Step 6: Save SMB Password to Keychain
+
+**This is important!** The script needs your password stored in Keychain:
+
+1. Open **Finder** → Press `⌘ + K` (Connect to Server)
+2. Type: `smb://your_username@192.168.1.100/SharedFolder`
+3. Enter your password
+4. ✅ Check **"Remember this password in my keychain"**
+5. Click Connect
+
+Now the script can connect without asking for password!
+
+### Step 7: Test the Script Manually
+
+```bash
+# Run the script to see if it works
+~/Scripts/mount_manager.sh
+
+# Watch the log in real-time (open a new terminal window)
+tail -f /tmp/mount_manager.log
+
+# You should see:
+# === Mount Session Started: ... ===
+# HH:MM:SS [SMB] Starting sequence...
+# HH:MM:SS [SMB] Network OK.
+# ...
+```
+
+### Step 8: Set Up Auto-Start at Login
+
+```bash
+# Download the LaunchAgent plist
+curl -o ~/Library/LaunchAgents/com.lazymount.plist https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/com.example.mountmanager.plist
+
+# Replace YOUR_USERNAME with your actual username
+sed -i '' "s/YOUR_USERNAME/$(whoami)/g" ~/Library/LaunchAgents/com.lazymount.plist
+
+# Load it (starts immediately)
+launchctl load ~/Library/LaunchAgents/com.lazymount.plist
+
+# Verify it's running
+launchctl list | grep lazymount
+```
+
+### Step 9: Verify Everything Works
+
+```bash
+# Check if your volumes are mounted:
+
+# For SMB:
+ls /Volumes/
+
+# For Rclone:
+ls ~/Mounts/
+
+# View recent logs:
+tail -20 /tmp/mount_manager.log
+```
+
+**🎉 Done!** Your storage will now auto-mount every time you log in.
+
 ---
 
 ## 🔧 Management Commands
