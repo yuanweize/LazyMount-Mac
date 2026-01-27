@@ -9,15 +9,13 @@
 
 ## 📂 项目结构
 
-```
-.
-├── 📜 [README.md](README.md)                    # 英文文档
-├── 📜 [README_CN.md](README_CN.md)                 # 中文文档
-├── 📜 [LICENSE](LICENSE)                      # MIT 许可证
-├── 🛠️ [mount_manager.sh](mount_manager.sh)             # 核心脚本：自动挂载 SMB/Rclone
-├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) # 挂载脚本的 LaunchAgent 配置
-└── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist)     # Ollama 服务启动配置 (AI)
-```
+.  
+├── 📜 [README.md](README.md) — 英文文档  
+├── 📜 [README_CN.md](README_CN.md) — 中文文档  
+├── 📜 [LICENSE](LICENSE) — MIT 许可证  
+├── 🛠️ [mount_manager.sh](mount_manager.sh) — 核心脚本：自动挂载 SMB/Rclone  
+├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) — 挂载脚本的 LaunchAgent 配置  
+└── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist) — Ollama 服务启动配置 (AI)  
 
 ---
 

@@ -9,15 +9,13 @@
 
 ## 📂 Project Structure
 
-```
-.
-├── 📜 [README.md](README.md)                    # English Documentation
-├── 📜 [README_CN.md](README_CN.md)                 # Chinese Documentation
-├── 📜 [LICENSE](LICENSE)                      # MIT License
-├── 🛠️ [mount_manager.sh](mount_manager.sh)             # Core script: Auto-mounts SMB/Rclone
-├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) # LaunchAgent for mount script
-└── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist)     # LaunchAgent for Ollama Service (AI)
-```
+.  
+├── 📜 [README.md](README.md) — English Documentation  
+├── 📜 [README_CN.md](README_CN.md) — Chinese Documentation  
+├── 📜 [LICENSE](LICENSE) — MIT License  
+├── 🛠️ [mount_manager.sh](mount_manager.sh) — Core script: Auto-mounts SMB/Rclone  
+├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) — LaunchAgent for mount script  
+└── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist) — LaunchAgent for Ollama Service (AI)  
 
 ---
 
