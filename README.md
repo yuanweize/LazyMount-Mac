@@ -115,22 +115,24 @@ LazyMount works beautifully with [Tailscale](https://tailscale.com/) for accessi
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     YOUR HOME NETWORK                        │
-│  ┌───────────┐     ┌───────────┐     ┌───────────────────┐  │
-│  │   NAS     │     │  Server   │     │  Tailscale Node   │  │
-│  │ 192.168.  │────▶│ (Rclone)  │────▶│  (Exit Node)      │  │
-│  │   1.100   │     │           │     │  100.x.x.x        │  │
-│  └───────────┘     └───────────┘     └─────────┬─────────┘  │
-└─────────────────────────────────────────────────┼───────────┘
-                                                  │
-                    ──── Tailscale VPN ───────────┘
-                                                  │
-┌─────────────────────────────────────────────────┼───────────┐
-│                    ANYWHERE IN THE WORLD        │           │
-│                         ┌───────────────────────▼─────────┐ │
-│                         │        Your MacBook             │ │
-│                         │    LazyMount Auto-Connects!     │ │
-│                         └─────────────────────────────────┘ │
+│                     YOUR HOME NETWORK                       │
+│                                                             │
+│    ┌───────────────┐        ┌───────────┐   ┌───────────┐   │
+│    │   Tailscale   │───────▶│    NAS    │   │  Server   │   │
+│    │ Subnet Router │        │ (SMB/AFP) │   │ (SSH/Web) │   │
+│    └───────────────┘        └───────────┘   └───────────┘   │
+│           │                                       ▲         │
+│           └───────────────────────────────────────┘         │
+└──────────────────────────────▲──────────────────────────────┘
+                               │
+                      Tailscale VPN Tunnel
+                               │
+┌──────────────────────────────┴──────────────────────────────┐
+│                    ANYWHERE IN THE WORLD                    │
+│                 ┌─────────────────────────┐                 │
+│                 │       Your MacBook      │                 │
+│                 │   (LazyMount Client)    │                 │
+│                 └─────────────────────────┘                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -500,6 +502,7 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 **A:** This is normal for Rclone. Reduce `--dir-cache-time` to `10s` for faster refresh.
 
 ### Q: How do I unmount manually?
+```bash
 # Rclone
 diskutil unmount force ~/Mounts/CloudStorage
 ```
