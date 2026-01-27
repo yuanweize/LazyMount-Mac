@@ -511,6 +511,12 @@ MIT License - 详见 [LICENSE](LICENSE)。
 
 ---
 
+## 🔗 友情链接
+
+- [AppPorts](https://github.com/wzh4869/AppPorts)
+
+---
+
 ## 🤝 贡献
 
 欢迎提交 Pull Request！
