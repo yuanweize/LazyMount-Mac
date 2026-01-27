@@ -105,6 +105,11 @@ BUNDLE_PATH="$SMB_MOUNT_POINT/Storage.sparsebundle"
 BUNDLE_VOLUME_NAME="ExternalStorage"
 ```
 
+> **⚠️ 游戏特别说明：**
+> *   Steam/Epic 游戏库 **必须** 使用 APFS 稀疏磁盘映像才能正常工作。
+> *   **LOL (英雄联盟)** 不支持存放在网络驱动器或 APFS 磁盘映像中（必须使用本地磁盘或 iSCSI）。
+
+
 ---
 
 ## 🌍 使用 Tailscale 远程访问
@@ -249,7 +254,7 @@ RCLONE_IP="192.168.1.10"
 | 网络类型 | 速度 | 加载 40GB 模型耗时 |
 |----------|------|-------------------|
 | 千兆网 (1G) | ~120 MB/s | ~5.5 分钟 |
-| **2.5G 网口** | ~300 MB/s | **~2.2 分钟** ✅ 推荐 |
+| **2.5G 网口** | ~300 MB/s | **~2.2 分钟** ✅ 推荐 (Mac Mini 自带) |
 | 万兆网 (10G) | ~1.2 GB/s | ~33 秒 |
 
 **硬件升级建议：**
@@ -505,15 +510,36 @@ diskutil unmount force ~/Mounts/CloudStorage
 
 ---
 
-## 📄 许可证
+## ⚠️ 已知问题
 
-MIT License - 详见 [LICENSE](LICENSE)。
+### APFS 稀疏磁盘映像与重启
+如果你的 Mac 在关机时没有"优雅断开"（例如断电、强制重启、死机），Steam/Epic 游戏库使用的 APFS 磁盘映像可能会出现数据校验错误。这会导致磁盘变为 **只读** 状态，或者无法写入新游戏数据。
+
+**解决方法：**
+1. 打开系统自带的 **磁盘工具 (Disk Utility)**。
+2. 选中挂载的卷（例如 `SteamLibrary`）。
+3. 点击顶部的 **急救 (First Aid)** 按钮并运行。
+4. 修复完成后即可恢复正常读写。
+
+*注：普通的 SMB、Rclone 和 SFTP 挂载不受此问题影响。*
 
 ---
 
-## 🔗 友情链接
+## 🛠️ 进阶存储管理
 
-- [AppPorts](https://github.com/wzh4869/AppPorts)
+**[AppPorts](https://github.com/wzh4869/AppPorts)** — *外接硬盘拯救世界！*
+
+> LazyMount 的最佳拍档。LazyMount 负责**连接**存储，AppPorts 负责**应用程序**。
+
+*   📦 **应用瘦身**：一键将巨大应用（Logic Pro, Xcode, 游戏）迁移到外置硬盘/NAS。
+*   🔗 **无缝链接**：独家 "App Portal" 技术，让系统误以为应用还在本地，不影响任何功能。
+*   🛡️ **安全可靠**：专为 macOS 目录结构优化，支持随时一键还原。
+
+---
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](LICENSE)。
 
 ---
 

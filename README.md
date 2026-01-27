@@ -179,6 +179,11 @@ BUNDLE_PATH="/Volumes/Games/SteamLibrary.sparsebundle"
 BUNDLE_VOLUME_NAME="SteamLibrary"
 ```
 
+> **⚠️ Gaming Note:**
+> *   Steam/Epic games **require** an APFS Sparse Bundle to work correctly.
+> *   **League of Legends (LOL)** does not support running from network drives (even inside APFS).
+
+
 Then in Steam: Settings → Storage → Add Library Folder → `/Volumes/SteamLibrary`
 
 ### 2. Time Machine to Remote Server
@@ -249,7 +254,7 @@ LLM models need to be loaded into RAM before inference. If your model isn't in l
 | Network Type | Speed | Time to Load 40GB Model |
 |--------------|-------|-------------------------|
 | 1 Gigabit (1G) | ~120 MB/s | ~5.5 minutes |
-| **2.5 Gigabit (2.5G)** | ~300 MB/s | **~2.2 minutes** ✅ Recommended |
+| **2.5 Gigabit (2.5G)** | ~300 MB/s | **~2.2 minutes** ✅ Recommended (Mac Mini default) |
 | 10 Gigabit (10G) | ~1.2 GB/s | ~33 seconds |
 
 **Hardware Recommendations:**
@@ -495,25 +500,43 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 **A:** This is normal for Rclone. Reduce `--dir-cache-time` to `10s` for faster refresh.
 
 ### Q: How do I unmount manually?
-```bash
-# SMB
-diskutil unmount /Volumes/YourShare
-
 # Rclone
 diskutil unmount force ~/Mounts/CloudStorage
 ```
 
 ---
 
-## 📄 License
+## ⚠️ Known Issues
 
-MIT License - See [LICENSE](LICENSE) for details.
+### APFS Sparse Bundle & Reboot
+If your Mac is not shut down gracefully (e.g., power loss, forced reboot), the APFS sparse bundle used for Game Libraries might report data verification issues. This can cause the volume to become **read-only** or refuse to write data.
+
+**Workaround:**
+1. Open **Disk Utility**.
+2. Select the mounted volume (e.g., `SteamLibrary`).
+3. Click **First Aid** and let it run.
+4. Once verified, it will work normally again.
+
+*Note: Standard SMB, Rclone, and SFTP mounts are not affected by this issue.*
 
 ---
 
-## 🔗 Friendly Links
+## 🛠️ Advanced Storage Management
 
-- [AppPorts](https://github.com/wzh4869/AppPorts)
+**[AppPorts](https://github.com/wzh4869/AppPorts)** — *External drives save the world!*
+
+> A perfect companion for LazyMount. While LazyMount handles the **connection**, AppPorts handles the **applications**.
+
+*   📦 **App Slimming**: One-click migration of multi-gigabyte applications (Logic Pro, Xcode, Games) to your external drives.
+*   🔗 **Seamless Linking**: Creates "App Portals" so macOS treats apps as if they are still local.
+*   🛡️ **Safety First**: Optimized for macOS directory structure, with one-click restore anytime.
+
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
