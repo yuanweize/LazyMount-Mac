@@ -7,6 +7,18 @@
 
 > **Expand your Mac storage effortlessly** — Auto-mount SMB shares and cloud storage at boot, with zero manual intervention.
 
+## 📂 Project Structure
+
+```
+.
+├── 📜 [README.md](README.md)                    # English Documentation
+├── 📜 [README_CN.md](README_CN.md)                 # Chinese Documentation
+├── 📜 [LICENSE](LICENSE)                      # MIT License
+├── 🛠️ [mount_manager.sh](mount_manager.sh)             # Core script: Auto-mounts SMB/Rclone
+├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) # LaunchAgent for mount script
+└── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist)     # LaunchAgent for Ollama Service (AI)
+```
+
 ---
 
 ## ✨ Why LazyMount?
@@ -293,6 +305,22 @@ LLM models need to be loaded into RAM before inference. If your model isn't in l
 - LLM apps (Ollama, LM Studio) unload models after idle time (typically 5 minutes)
 - Next query requires reloading the full model from network
 - Fast network = quick model loading = better experience
+
+### 🧠 Ollama Service Setup (Optional)
+
+If you want Ollama to start automatically at boot and serve models from your network drive (0.0.0.0), use the provided plist:
+
+1. **Edit the plist:**
+   Open `com.ollama.startup.plist` and change `/Users/YOUR_USERNAME/.ollama/models` to your actual mount path (e.g., `/Users/yuanweize/Mounts/Server/ai-models`).
+
+2. **Install:**
+   ```bash
+   cp com.ollama.startup.plist ~/Library/LaunchAgents/
+   launchctl load ~/Library/LaunchAgents/com.ollama.startup.plist
+   ```
+
+3. **Verify:**
+   Ollama will now start largely and listen on all interfaces. Access it from other devices via `http://YOUR_MAC_IP:11434`.
 
 ---
 

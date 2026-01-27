@@ -7,6 +7,18 @@
 
 > **轻松扩展 Mac 存储空间** — 开机自动挂载 SMB 共享和云存储，全程无需手动操作。
 
+## 📂 项目结构
+
+```
+.
+├── 📜 [README.md](README.md)                    # 英文文档
+├── 📜 [README_CN.md](README_CN.md)                 # 中文文档
+├── 📜 [LICENSE](LICENSE)                      # MIT 许可证
+├── 🛠️ [mount_manager.sh](mount_manager.sh)             # 核心脚本：自动挂载 SMB/Rclone
+├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) # 挂载脚本的 LaunchAgent 配置
+└── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist)     # Ollama 服务启动配置 (AI)
+```
+
 ---
 
 ## ✨ 为什么选择 LazyMount？
@@ -293,6 +305,22 @@ RCLONE_IP="192.168.1.10"
 - 大模型应用 (Ollama, LM Studio) 闲置几分钟后会自动卸载模型（通常是 5 分钟）
 - 下次对话需要重新加载整个模型
 - 快网络 = 快速加载模型 = 更好的使用体验
+
+### 🧠 Ollama 服务配置（可选）
+
+如果你希望 Ollama 在开机时自动启动，并利用网络驱动器（NAS）存储模型，同时允许局域网访问（0.0.0.0），请使用提供的配置文件：
+
+1. **编辑配置文件：**
+   打开 `com.ollama.startup.plist`，将 `/Users/YOUR_USERNAME/.ollama/models` 修改为你的实际挂载路径（例如 `/Users/yuanweize/Mounts/Server/ai-models`）。
+
+2. **安装服务：**
+   ```bash
+   cp com.ollama.startup.plist ~/Library/LaunchAgents/
+   launchctl load ~/Library/LaunchAgents/com.ollama.startup.plist
+   ```
+
+3. **验证：**
+   Ollama 现在会自动启动并监听所有接口。你可以通过其他设备访问 `http://你的MacIP:11434`。
 
 ---
 
