@@ -48,9 +48,27 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
    rclone config
    ```
 
-2. **macFUSE** (required for Rclone):
+2. **Install FUSE Interface** (Connection Layer):
+   
+   You need **ONE** of the following. **FUSE-T is recommended** for modern Macs (M1/M2/M3) as it doesn't require lowering system security.
+
+   | Feature | **Option A: FUSE-T** (Recommended) | **Option B: macFUSE** (Legacy) |
+   | :--- | :--- | :--- |
+   | **Type** | User-space (NFS Bridging) | Kernel Extension (Kext) |
+   | **Security** | ✅ **Safe** (No SIP changes) | ⚠️ **Low** (Must reduce security in Recovery Mode) |
+   | **Stability** | ✅ High (Uses native macOS NFS) | ⚠️ Risk of kernel panics |
+   | **Best for** | macOS 12+ / Apple Silicon | Intel Macs / Legacy software |
+
+   **To install FUSE-T (Recommended):**
+   ```bash
+   brew tap macos-fuse-t/homebrew-cask
+   brew install fuse-t
+   ```
+
+   **To install macFUSE (If you prefer Kexts):**
    ```bash
    brew install --cask macfuse
+   # ⚠️ On Apple Silicon, you must reboot into Recovery Mode and enable Kernel Extensions!
    ```
 
 3. **(Recommended) Tailscale** — For remote access to home network:

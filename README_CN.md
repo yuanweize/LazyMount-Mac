@@ -48,9 +48,27 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
    rclone config
    ```
 
-2. **macFUSE**（Rclone 依赖）：
+2. **安装 FUSE 接口**（连接层）：
+   
+   你需要安装**其中一种**。对于现代 Mac（M1/M2/M3），**强烈推荐 FUSE-T**，因为它不需要降低系统安全性。
+
+   | 特性 | **方案 A: FUSE-T** (推荐) | **方案 B: macFUSE** (传统) |
+   | :--- | :--- | :--- |
+   | **类型** | 用户态 (NFS 桥接) | 内核扩展 (Kernel Extension) |
+   | **安全性** | ✅ **安全** (无需动 SIP) | ⚠️ **低** (需在恢复模式降低安全性) |
+   | **稳定性** | ✅ 高 (使用原生 macOS NFS) | ⚠️ 有内核崩溃风险 |
+   | **适用** | macOS 12+ / Apple Silicon | Intel Mac / 旧版软件 |
+
+   **安装 FUSE-T (推荐):**
+   ```bash
+   brew tap macos-fuse-t/homebrew-cask
+   brew install fuse-t
+   ```
+
+   **安装 macFUSE (如果你偏好内核模式):**
    ```bash
    brew install --cask macfuse
+   # ⚠️ M1/M2/M3 用户必须重启进入恢复模式并启用内核扩展！
    ```
 
 3. **（推荐）Tailscale** — 用于远程访问家庭网络：
