@@ -2,24 +2,38 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- Label: The unique identifier for this service -->
     <key>Label</key>
     <string>com.ollama.startup</string>
+
+    <!-- ProgramArguments: Command to start Ollama server -->
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/ollama</string>
         <string>serve</string>
     </array>
+
+    <!-- EnvironmentVariables: Critical settings for network & storage -->
     <key>EnvironmentVariables</key>
     <dict>
+        <!-- OLLAMA_HOST: 0.0.0.0 allows access from other devices (e.g., for storage management) -->
         <key>OLLAMA_HOST</key>
         <string>0.0.0.0</string>
+
+        <!-- OLLAMA_MODELS: PATH TO YOUR NETWORK MODELS -->
+        <!-- ⚠️ CHANGE THIS PATH to your actual mounted network drive! -->
+        <!-- Example: /Users/yourname/Mounts/Server/ai-models -->
         <key>OLLAMA_MODELS</key>
         <string>/Users/YOUR_USERNAME/.ollama/models</string>
     </dict>
+
+    <!-- Service settings: Auto-start and Keep-alive -->
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
+
+    <!-- Logs: Check these if Ollama fails to start -->
     <key>StandardOutPath</key>
     <string>/tmp/ollama.stdout.log</string>
     <key>StandardErrorPath</key>
