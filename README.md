@@ -17,17 +17,33 @@
 ├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) — LaunchAgent for mount script  
 └── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist) — LaunchAgent for Ollama Service (AI)  
 
+
+---
+
+## 📖 Table of Contents
+
+- [✨ Why LazyMount?](#-why-lazymount)
+- [📦 Installation](#-installation)
+  - [Prerequisites](#prerequisites)
+  - [Install FUSE Interface](#2-install-fuse-interface-connection-layer)
+- [⚙️ Configuration](#-configuration)
+- [🌍 Remote Access (Tailscale)](#-remote-access-with-tailscale)
+- [🎮 Use Case Examples](#-use-case-examples)
+- [📚 Detailed Beginner's Guide](#-detailed-beginners-guide)
+- [❓ FAQ / Troubleshooting](#-faq--troubleshooting)
+
 ---
 
 ## ✨ Why LazyMount?
 
 Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves this by seamlessly extending your Mac with external storage:
 
-- 🎮 **Game Libraries** — Store Steam/Epic games on a NAS, play them like local installs
-- 💾 **Time Machine Backups** — Back up to a remote server automatically
-- 🎬 **Media Libraries** — Access your movie/music collection stored on a home server
-- 📁 **Project Archives** — Keep large files on cheaper storage, access them on-demand
-- ☁️ **Cloud Storage** — Mount Google Drive, Dropbox, or any rclone-supported service as a local folder
+- 🎮 **[Game Libraries](#1-steam-game-library-on-nas)** — Store Steam/Epic games on a NAS, play them like local installs
+- 💾 **[Time Machine Backups](#2-time-machine-to-remote-server)** — Back up to a remote server automatically
+- 🎬 **[Media Libraries](#3-media-server-plexjellyfin-source)** — Access your movie/music collection stored on a home server
+- 📁 **[Project Archives](#5-work-project-archives)** — Keep large files on cheaper storage, access them on-demand
+- ☁️ **[Cloud Storage](#4-google-drive--dropbox-as-local-folder)** — Mount Google Drive, Dropbox, or any rclone-supported service as a local folder
+- 🧠 **[AI Model Storage](#6-aillm-model-storage-ollama-lm-studio-etc)** — Run large LLMs (Ollama) from network storage to save 100GB+ SSD space
 
 **Key Features:**
 - 🔄 **Auto-mount at login** — No manual clicking required

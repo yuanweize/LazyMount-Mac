@@ -17,17 +17,33 @@
 ├── ⚙️ [com.example.mountmanager.plist](com.example.mountmanager.plist) — 挂载脚本的 LaunchAgent 配置  
 └── 🧠 [com.ollama.startup.plist](com.ollama.startup.plist) — Ollama 服务启动配置 (AI)  
 
+
+---
+
+## 📖 目录 (Table of Contents)
+
+- [✨ 为什么选择 LazyMount？](#-为什么选择-lazymount)
+- [📦 安装](#-安装)
+  - [前置要求](#前置要求)
+  - [安装 FUSE 接口](#2-安装-fuse-接口连接层)
+- [⚙️ 配置说明](#-配置说明)
+- [🌍 使用 Tailscale 远程访问](#-使用-tailscale-远程访问)
+- [🎮 使用场景示例](#-使用场景示例)
+- [📚 新手详细教程](#-新手详细教程)
+- [❓ 常见问题 (FAQ)](#-常见问题-faq)
+
 ---
 
 ## ✨ 为什么选择 LazyMount？
 
 Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮你用外部存储无缝扩展 Mac：
 
-- 🎮 **游戏库** — 把 Steam/Epic 游戏放在 NAS 上，玩起来跟本地一样
-- 💾 **时间机器备份** — 自动备份到远程服务器
-- 🎬 **媒体库** — 随时访问存放在家庭服务器上的电影/音乐
-- 📁 **项目归档** — 大文件放在便宜的存储上，按需访问
-- ☁️ **云存储** — 把 Google Drive、Dropbox 或任何 rclone 支持的服务挂载成本地文件夹
+- 🎮 **[游戏库](#1-nas-上的-steam-游戏库)** — 把 Steam/Epic 游戏放在 NAS 上，玩起来跟本地一样
+- 💾 **[时间机器备份](#2-时间机器备份到远程服务器)** — 自动备份到远程服务器
+- 🎬 **[媒体库](#3-媒体服务器plexjellyfin-片源)** — 随时访问存放在家庭服务器上的电影/音乐
+- 📁 **[项目归档](#5-公司项目归档)** — 大文件放在便宜的存储上，按需访问
+- ☁️ **[云存储](#4-google-drive--dropbox-当本地文件夹)** — 把 Google Drive、Dropbox 或任何 rclone 支持的服务挂载成本地文件夹
+- 🧠 **[AI 模型存储](#6-ai大模型存储库-ollama-lm-studio-等)** — 将大模型存放在网络驱动器上，节省本地 SSD 空间
 
 **核心特性：**
 - 🔄 **开机自动挂载** — 不用手动点击
