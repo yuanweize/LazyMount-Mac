@@ -26,11 +26,11 @@
 - [📦 安装](#-安装)
   - [前置要求](#前置要求)
   - [安装 FUSE 接口](#2-安装-fuse-接口连接层)
-- [⚙️ 配置说明](#-配置说明)
-- [🌍 使用 Tailscale 远程访问](#-使用-tailscale-远程访问)
-- [🎮 使用场景示例](#-使用场景示例)
-- [📚 新手详细教程](#-新手详细教程)
-- [❓ 常见问题 (FAQ)](#-常见问题-faq)
+- [⚙️ 配置说明](#配置说明)
+- [🌍 使用 Tailscale 远程访问](#使用-tailscale-远程访问)
+- [🎮 使用场景示例](#使用场景示例)
+- [📚 新手详细教程](#新手详细教程)
+- [❓ 常见问题 (FAQ)](#常见问题-faq)
 
 ---
 
@@ -135,7 +135,7 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## ⚙️ 配置说明
+## 配置说明
 
 编辑 `~/Scripts/mount_manager.sh`，修改 **USER CONFIGURATION** 部分：
 
