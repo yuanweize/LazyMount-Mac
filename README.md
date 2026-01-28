@@ -25,12 +25,12 @@
 - [✨ Why LazyMount?](#-why-lazymount)
 - [📦 Installation](#-installation)
   - [Prerequisites](#prerequisites)
-  - [Install FUSE Interface](#2-install-fuse-interface-connection-layer)
-- [⚙️ Configuration](#-configuration)
+  - [Install FUSE Interface](#fuse-install)
+- [⚙️ Configuration](#configuration)
 - [🌍 Remote Access (Tailscale)](#-remote-access-with-tailscale)
 - [🎮 Use Case Examples](#-use-case-examples)
 - [📚 Detailed Beginner's Guide](#-detailed-beginners-guide)
-- [❓ FAQ / Troubleshooting](#-faq--troubleshooting)
+- [❓ FAQ / Troubleshooting](#faq)
 
 ---
 
@@ -64,7 +64,8 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
    rclone config
    ```
 
-2. **Install FUSE Interface** (Connection Layer):
+
+2. **<a id="fuse-install"></a>Install FUSE Interface** (Connection Layer):
    
    You need **ONE** of the following. **FUSE-T is recommended** for modern Macs (M1/M2/M3) as it doesn't require lowering system security.
 
@@ -135,7 +136,7 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## ⚙️ Configuration
+## <a id="configuration"></a>⚙️ Configuration
 
 Edit `~/Scripts/mount_manager.sh` and modify the **USER CONFIGURATION** section:
 
@@ -567,7 +568,7 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## ❓ FAQ / Troubleshooting
+## <a id="faq"></a>❓ FAQ / Troubleshooting
 
 ### Q: Mount fails with "permission denied"
 **A:** Ensure your SMB credentials are saved in Keychain:

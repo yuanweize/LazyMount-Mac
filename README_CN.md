@@ -25,12 +25,12 @@
 - [✨ 为什么选择 LazyMount？](#-为什么选择-lazymount)
 - [📦 安装](#-安装)
   - [前置要求](#前置要求)
-  - [安装 FUSE 接口](#2-安装-fuse-接口连接层)
-- [⚙️ 配置说明](#-配置说明)
+  - [安装 FUSE 接口](#fuse-install)
+- [⚙️ 配置说明](#configuration)
 - [🌍 使用 Tailscale 远程访问](#-使用-tailscale-远程访问)
 - [🎮 使用场景示例](#-使用场景示例)
 - [📚 新手详细教程](#-新手详细教程)
-- [❓ 常见问题 (FAQ)](#-常见问题-faq)
+- [❓ 常见问题 (FAQ)](#faq)
 
 ---
 
@@ -64,7 +64,8 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
    rclone config
    ```
 
-2. **安装 FUSE 接口**（连接层）：
+
+2. **<a id="fuse-install"></a>安装 FUSE 接口**（连接层）：
    
    你需要安装**其中一种**。对于现代 Mac（M1/M2/M3），**强烈推荐 FUSE-T**，因为它不需要降低系统安全性。
 
@@ -135,7 +136,7 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## ⚙️ 配置说明
+## <a id="configuration"></a>⚙️ 配置说明
 
 编辑 `~/Scripts/mount_manager.sh`，修改 **USER CONFIGURATION** 部分：
 
@@ -567,7 +568,7 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## ❓ 常见问题 (FAQ)
+## <a id="faq"></a>❓ 常见问题 (FAQ)
 
 ### Q: 挂载失败，提示 "permission denied"
 **A:** 确保 SMB 凭证已保存到钥匙串：
