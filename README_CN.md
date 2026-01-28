@@ -130,7 +130,7 @@ cp com.example.mountmanager.plist ~/Library/LaunchAgents/com.lazymount.plist
 # 把 YOUR_USERNAME 替换成你的用户名：
 sed -i '' "s/YOUR_USERNAME/$(whoami)/g" ~/Library/LaunchAgents/com.lazymount.plist
 
-# 5. 加载它！
+# 5. 加载 LaunchAgent 服务
 launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 ```
 
@@ -140,27 +140,25 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ## <a id="configuration"></a>⚙️ 配置说明
 
-**直接编辑脚本即可！**这是最简单的“单文件”管理方式。
+所有配置均位于 `mount_manager.sh` 脚本顶部的 **USER CONFIGURATION** 区域。
 
 ```bash
 nano ~/Scripts/mount_manager.sh
 ```
 
-修改文件顶部的 **USER CONFIGURATION** 区域：
+### Rclone 高级配置
 
-### Rclone 高级配置 (数组模式)
-
-现在脚本使用 **数组 (Array)** 来管理复杂的 Rclone 参数，你可以很方便地增删参数，不用担心破坏代码逻辑：
+Rclone 挂载参数通过 `RCLONE_MOUNT_ARGS` 数组进行管理。您可以直接在此数组中添加、删除或修改参数以自定义挂载行为。
 
 ```bash
-# 在 mount_manager.sh 中：
+# mount_manager.sh 内部：
 
 RCLONE_MOUNT_ARGS=(
     "--volname" "CloudStorage"
     "--vfs-cache-mode" "full"
-    "--vfs-cache-max-size" "20G"   # <--- 改这就行
+    "--vfs-cache-max-size" "20G"
     "--no-modtime"
-    # 在这里添加其他 Rclone flag
+    # 在此处添加自定义 flag
 )
 ```
 
@@ -435,7 +433,7 @@ brew install --cask macfuse
 ```
 
 **如果你安装的是 FUSE-T：**
-恭喜，你已经搞定！无需重启，无需改安全设置。
+安装已完成。无需重启，无需更改安全设置。
 
 **如果你安装的是 macFUSE：**
 1. 打开系统设置 → 隐私与安全性
@@ -517,7 +515,7 @@ SMB_SHARE="SharedFolder"                       # ← 共享文件夹名
 4. ✅ 勾选 **"在我的钥匙串中记住此密码"**
 5. 点击连接
 
-这样脚本就能自动连接，不用每次输密码！
+配置后脚本将自动使用钥匙串中的凭证连接。
 
 ### 第 7 步：手动测试脚本
 
@@ -566,7 +564,7 @@ ls ~/Mounts/
 tail -20 /tmp/mount_manager.log
 ```
 
-**🎉 搞定！** 你的存储空间现在每次登录都会自动挂载。
+**设置完成。** 你的存储空间现在每次登录都会自动挂载。
 
 ---
 

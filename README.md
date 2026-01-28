@@ -130,7 +130,7 @@ cp com.example.mountmanager.plist ~/Library/LaunchAgents/com.lazymount.plist
 # Edit the plist to use your username:
 sed -i '' "s/YOUR_USERNAME/$(whoami)/g" ~/Library/LaunchAgents/com.lazymount.plist
 
-# 5. Load it!
+# 5. Load the LaunchAgent service
 launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 ```
 
@@ -140,17 +140,17 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ## <a id="configuration"></a>⚙️ Configuration
 
-**Simply edit the script directly!**
+Configuration is managed by editing variables at the top of the `mount_manager.sh` script.
 
 ```bash
 nano ~/Scripts/mount_manager.sh
 ```
 
-Modify the **USER CONFIGURATION** section at the top of the file:
+Locate the **USER CONFIGURATION** section to adjust settings.
 
-### Rclone Settings (Advanced Arrays)
+### Rclone Advanced Configuration
 
-The script now uses an **Array** for Rclone flags, making it easy to add/remove parameters without breaking the code:
+Rclone mount flags are defined in the `RCLONE_MOUNT_ARGS` array. You can add, remove, or modify flags in this array to customize the mount behavior.
 
 ```bash
 # In mount_manager.sh:
@@ -158,9 +158,9 @@ The script now uses an **Array** for Rclone flags, making it easy to add/remove 
 RCLONE_MOUNT_ARGS=(
     "--volname" "CloudStorage"
     "--vfs-cache-mode" "full"
-    "--vfs-cache-max-size" "20G"   # <--- Change cache size here
+    "--vfs-cache-max-size" "20G"
     "--no-modtime"
-    # Add your own flags here!
+    # Add custom flags here
 )
 ```
 
@@ -487,7 +487,7 @@ curl -o ~/Scripts/mount_manager.sh https://raw.githubusercontent.com/yuanweize/L
 # Make it executable
 chmod +x ~/Scripts/mount_manager.sh
 
-# Open it in TextEdit for easy editing
+# Open in TextEdit
 open -e ~/Scripts/mount_manager.sh
 ```
 
@@ -517,7 +517,7 @@ SMB_SHARE="SharedFolder"                       # ← Share folder name
 4. ✅ Check **"Remember this password in my keychain"**
 5. Click Connect
 
-Now the script can connect without asking for password!
+The script will now connect using the stored credentials.
 
 ### Step 7: Test the Script Manually
 
@@ -566,7 +566,7 @@ ls ~/Mounts/
 tail -20 /tmp/mount_manager.log
 ```
 
-**🎉 Done!** Your storage will now auto-mount every time you log in.
+**Setup Complete.** Your storage will now auto-mount every time you log in.
 
 ---
 
