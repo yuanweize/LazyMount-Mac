@@ -73,15 +73,18 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
    <details>
    <summary><strong>⚠️ How to enable macFUSE on Apple Silicon (M1/M2/M3/M4...)</strong></summary>
 
+   **Method 1: The Official Way (Recommended, keeps System Integrity Protection ON)**
    1. Shutdown your Mac.
-   2. Press and hold the **Power Button** until you see "Loading startup options".
+   2. Press and hold the **Power Button** until "Loading startup options" appears.
    3. Click **Options** -> **Continue**.
-   4. In the menu bar, choose **Utilities** -> **Startup Security Utility**.
-   5. Select your startup disk -> **Security Policy...**
-   6. Choose **Reduced Security** and check **"Allow user management of kernel extensions from identified developers"**.
-   7. Restart your Mac.
-   8. Go to **System Settings** -> **Privacy & Security** and allow the "Benjamin Fleischer" system extension.
-   9. Restart again.
+   4. Menu bar: **Utilities** -> **Startup Security Utility**.
+   5. Select your disk -> **Security Policy...**
+   6. Choose **Reduced Security** and check **"Allow user management of kernel extensions..."**.
+   7. Restart -> System Settings -> Privacy & Security -> Allow "Benjamin Fleischer".
+   8. Restart again.
+
+   **Method 2: The Terminal Way (NOT Recommended, disables SIP)**
+   *You might see tutorials suggesting `csrutil disable` in Recovery Terminal. While this works, it completely disables macOS security protections. Method 1 is safer.*
    </details>
    <br>
 
