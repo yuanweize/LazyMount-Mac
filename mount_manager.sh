@@ -72,7 +72,6 @@ BUNDLE_MOUNT_ARGS=("-noverify" "-noautofsck" "-owners" "off")
 # ====================
 #   LOAD EXTERNAL CONFIG
 # ====================
-# (Code removed to support single-script deployment)
 
 # Dynamic Variables
 SMB_URL="smb://${SMB_USER}@${SMB_IP}/${SMB_SHARE}"
