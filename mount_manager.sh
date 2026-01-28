@@ -2,7 +2,7 @@
 
 # ==========================================
 #      LazyMount - Universal Mount Manager
-#      Version: 1.5 (Robust)
+#      Version: 2.0 (Modular & Configurable)
 #      https://github.com/yuanweize/LazyMount-Mac
 # ==========================================
 #
@@ -11,44 +11,90 @@
 #   2. Rclone cloud storage (via SFTP/etc.)
 #
 # Features:
-#   - Auto-retry on network failure (60 retries × 2s = 120s timeout)
+#   - External config support (git-friendly)
+#   - Auto-retry on network failure
 #   - Clean logging to single file
 #   - Works with Tailscale for remote access
-#   - LaunchAgent integration for boot-time mounting
 #
 # ==========================================
 
 # ====================
-#   USER CONFIGURATION - EDIT THESE VALUES
+#   DEFAULT CONFIGURATION
 # ====================
+# ⚠️ DO NOT EDIT THIS SECTION DIRECTLY IF YOU WANT TO AVOID GIT CONFLICTS.
+# Instead, create a file named 'mount_manager.local.sh' in the same directory
+# and override the variables there. The script will load it automatically.
 
 # --- Global Settings ---
 LOG_FILE="/tmp/mount_manager.log"
 
 # --- Rclone Configuration ---
-# Set RCLONE_ENABLED="false" to disable Rclone mounting
 RCLONE_ENABLED="true"
-RCLONE_REMOTE="your-remote:/path/to/folder"        # Rclone remote name and path
-RCLONE_MOUNT_POINT="$HOME/Mounts/CloudStorage"     # Where to mount locally
-RCLONE_BIN="/usr/local/bin/rclone"                 # Path to rclone binary
-RCLONE_IP="100.x.x.x"                              # IP to ping for network check (Tailscale IP recommended)
+RCLONE_REMOTE="your-remote:/path/to/folder"        # Override in .local.sh
+RCLONE_MOUNT_POINT="$HOME/Mounts/CloudStorage"     # Override in .local.sh
+RCLONE_BIN="/usr/local/bin/rclone"
+RCLONE_IP="100.100.100.100"                        # Tailscale IP or 8.8.8.8
+
+# Advanced Rclone Flags (Array for easy customization)
+RCLONE_MOUNT_ARGS=(
+    "--volname" "CloudStorage"
+    "--vfs-cache-mode" "full"
+    "--vfs-cache-max-size" "20G"
+    "--vfs-cache-max-age" "24h"
+    "--vfs-read-chunk-size" "64M"
+    "--vfs-read-chunk-size-limit" "off"
+    "--buffer-size" "128M"
+    "--dir-cache-time" "30s"
+    "--attr-timeout" "30s"
+    "--vfs-cache-poll-interval" "15s"
+    "--vfs-fast-fingerprint"
+    "--no-checksum"
+    "--no-modtime"
+    "--async-read=true"
+    "--exclude" ".DS_Store"
+    "--exclude" "._*"
+    "--log-level=INFO"
+)
 
 # --- SMB Configuration ---
-# Set SMB_ENABLED="false" to disable SMB mounting
 SMB_ENABLED="true"
-SMB_IP="192.168.1.100"                             # SMB server IP
-SMB_USER="your_username"                           # SMB username
-SMB_SHARE="SharedFolder"                           # SMB share name
-SMB_URL="smb://${SMB_USER}@${SMB_IP}/${SMB_SHARE}"
-SMB_MOUNT_POINT="/Volumes/${SMB_SHARE}"
+SMB_IP="192.168.1.100"                             # Override in .local.sh
+SMB_USER="your_username"                           # Override in .local.sh
+SMB_SHARE="SharedFolder"                           # Override in .local.sh
+# SMB_URL is constructed dynamically below
 
 # --- Sparse Bundle Configuration (Optional) ---
-# Leave empty to disable sparse bundle mounting
-BUNDLE_PATH=""                                     # e.g., "$SMB_MOUNT_POINT/Storage.sparsebundle"
-BUNDLE_VOLUME_NAME=""                              # e.g., "ExternalStorage"
+BUNDLE_PATH=""                                     # Override in .local.sh
+BUNDLE_VOLUME_NAME=""                              # Override in .local.sh
+# Custom hdiutil flags (e.g. -noverify, -readonly)
+BUNDLE_MOUNT_ARGS=("-noverify" "-noautofsck" "-owners" "off")
 
 # ====================
-#   END OF USER CONFIGURATION
+#   LOAD EXTERNAL CONFIG
+# ====================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCAL_CONFIG="${SCRIPT_DIR}/mount_manager.local.sh"
+USER_RC="${HOME}/.lazymountrc"
+
+if [ -f "$LOCAL_CONFIG" ]; then
+    echo "[Init] Loading local config: $LOCAL_CONFIG"
+    source "$LOCAL_CONFIG"
+elif [ -f "$USER_RC" ]; then
+    echo "[Init] Loading user config: $USER_RC"
+    source "$USER_RC"
+fi
+
+# Dynamic Variables (Constructed after loading config)
+SMB_URL="smb://${SMB_USER}@${SMB_IP}/${SMB_SHARE}"
+if [ -n "$SMB_SHARE_PATH" ]; then
+    # Support for subfolders in SMB share if needed
+    SMB_MOUNT_POINT="/Volumes/${SMB_SHARE}"
+else
+    SMB_MOUNT_POINT="/Volumes/${SMB_SHARE}"
+fi
+
+# ====================
+#   MAIN LOGIC
 # ====================
 
 # Redirect all output to log file
@@ -56,9 +102,7 @@ exec 1>>"$LOG_FILE" 2>&1
 
 echo "=== Mount Session Started: $(date) ==="
 
-# ==========================================
-#   Module 1: SMB Share Mounting
-# ==========================================
+# --- Module 1: SMB Share Mounting ---
 function mount_smb() {
     log() { echo "$(date +'%H:%M:%S') [SMB] $1"; }
     
@@ -69,7 +113,7 @@ function mount_smb() {
     
     log "Starting sequence..."
     
-    # 1. Network detection with timeout
+    # 1. Network detection
     local max_retries=60
     local count=0
     while ! ping -c 1 -W 1 $SMB_IP &> /dev/null; do
@@ -87,7 +131,6 @@ function mount_smb() {
         log "Mounting SMB share..."
         local t_start=$(date +%s)
         
-        # Use osascript to avoid Finder popup dialogs
         /usr/bin/osascript -e "try" -e "mount volume \"${SMB_URL}\"" -e "end try"
         
         local wait_count=0
@@ -112,8 +155,8 @@ function mount_smb() {
             if [ -d "$BUNDLE_PATH" ]; then
                 local t_start=$(date +%s)
                 
-                # -owners off: Ignore ownership for better compatibility
-                /usr/bin/hdiutil attach "$BUNDLE_PATH" -noverify -noautofsck -owners off -mountpoint "/Volumes/$BUNDLE_VOLUME_NAME"
+                # Use configured arguments
+                /usr/bin/hdiutil attach "$BUNDLE_PATH" "${BUNDLE_MOUNT_ARGS[@]}" -mountpoint "/Volumes/$BUNDLE_VOLUME_NAME"
                 
                 local t_end=$(date +%s)
                 sleep 1
@@ -135,9 +178,7 @@ function mount_smb() {
     log "Sequence finished."
 }
 
-# ==========================================
-#   Module 2: Rclone Cloud Storage Mounting
-# ==========================================
+# --- Module 2: Rclone Cloud Storage Mounting ---
 function mount_rclone() {
     if [ "$RCLONE_ENABLED" != "true" ]; then
         echo "$(date +'%H:%M:%S') [Rclone] Rclone mounting disabled. Skipping."
@@ -155,7 +196,7 @@ function mount_rclone() {
     /bin/rm -rf "$RCLONE_MOUNT_POINT"
     /bin/mkdir -p "$RCLONE_MOUNT_POINT"
 
-    # 2. Network detection with timeout
+    # 2. Network detection
     local max_retries=60
     local count=0
     echo "$(date +'%H:%M:%S') [Rclone] Checking network ($RCLONE_IP)..."
@@ -169,38 +210,18 @@ function mount_rclone() {
     done
     echo "$(date +'%H:%M:%S') [Rclone] Network OK."
 
-    # 3. Execute mount
-    # Adjust these parameters based on your needs:
-    #   --vfs-cache-max-size: Local cache size (increase for better performance)
-    #   --dir-cache-time: How long to cache directory listings
-    #   --vfs-cache-mode full: Full caching for best compatibility
-    $RCLONE_BIN mount $RCLONE_REMOTE $RCLONE_MOUNT_POINT \
-        --volname "CloudStorage" \
-        --vfs-cache-mode full \
-        --vfs-cache-max-size 20G \
-        --vfs-cache-max-age 24h \
-        --vfs-read-chunk-size 64M \
-        --vfs-read-chunk-size-limit off \
-        --buffer-size 128M \
-        --dir-cache-time 30s \
-        --attr-timeout 30s \
-        --vfs-cache-poll-interval 15s \
-        --vfs-fast-fingerprint \
-        --no-checksum \
-        --no-modtime \
-        --async-read=true \
-        --exclude ".DS_Store" \
-        --exclude "._*" \
-        --log-level=INFO
+    # 3. Execute mount using array arguments
+    # We use "${RCLONE_MOUNT_ARGS[@]}" to properly expand the array
+    $RCLONE_BIN mount "$RCLONE_REMOTE" "$RCLONE_MOUNT_POINT" \
+        "${RCLONE_MOUNT_ARGS[@]}"
 }
 
-# ==========================================
+# ====================
 #   Main Execution
-# ==========================================
+# ====================
 
-# Run SMB mounting in background (finishes quickly)
+# Run SMB mounting in background
 mount_smb &
 
-# Run Rclone in foreground (stays alive)
-# If Rclone exits or network times out, script ends and LaunchAgent restarts it
+# Run Rclone in foreground
 mount_rclone

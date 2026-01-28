@@ -138,7 +138,44 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ## <a id="configuration"></a>⚙️ 配置说明
 
-编辑 `~/Scripts/mount_manager.sh`，修改 **USER CONFIGURATION** 部分：
+ LazyMount 支持两种配置方式：
+
+### 方式 1：使用配置文件（推荐，Git 友好）
+在脚本同级目录（`~/Scripts/`）创建一个名为 `mount_manager.local.sh` 的文件。这个文件会被 Git 忽略，因此你的私有配置不会被覆盖，也不会意外提交到公开仓库。
+
+```bash
+# 创建覆盖配置文件
+touch ~/Scripts/mount_manager.local.sh
+open -e ~/Scripts/mount_manager.local.sh
+```
+
+将你的配置粘贴进去：
+
+```bash
+# ~/Scripts/mount_manager.local.sh
+
+# --- Rclone 配置 ---
+RCLONE_REMOTE="myremote:/backup"
+RCLONE_MOUNT_POINT="$HOME/Mounts/Backup"
+
+# --- SMB 配置 ---
+SMB_IP="192.168.1.50"
+SMB_USER="admin"
+SMB_SHARE="Workspace"
+
+# --- 进阶：覆盖 Rclone 挂载参数 ---
+# 你甚至可以重写整个参数数组：
+RCLONE_MOUNT_ARGS=(
+    "--volname" "MyCloud"
+    "--vfs-cache-mode" "full"
+    "--vfs-cache-max-size" "100G"  # 改大缓存
+    "--no-modtime"
+)
+```
+
+### 方式 2：直接编辑脚本（简单）
+如果你不打算使用 Git 更新脚本，可以直接编辑 `mount_manager.sh` 的 **DEFAULT CONFIGURATION** 部分：
+
 
 ### SMB 共享配置
 
