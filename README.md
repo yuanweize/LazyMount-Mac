@@ -138,44 +138,31 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ## <a id="configuration"></a>⚙️ Configuration
 
-There are two ways to configure LazyMount:
+## <a id="configuration"></a>⚙️ Configuration
 
-### Method 1: The "Git-Friendly" Way (Recommended)
-Create a file named `mount_manager.local.sh` in the same folder as the script (`~/Scripts/`). This file is ignored by Git, so your private settings won't be overwritten or accidentally shared.
+**Simply edit the script directly!**
 
 ```bash
-# Create the override file
-touch ~/Scripts/mount_manager.local.sh
-open -e ~/Scripts/mount_manager.local.sh
+nano ~/Scripts/mount_manager.sh
 ```
 
-Paste your settings there:
+Modify the **USER CONFIGURATION** section at the top of the file:
+
+### Rclone Settings (Advanced Arrays)
+
+The script now uses an **Array** for Rclone flags, making it easy to add/remove parameters without breaking the code:
 
 ```bash
-# ~/Scripts/mount_manager.local.sh
+# In mount_manager.sh:
 
-# --- Custom Rclone Settings ---
-RCLONE_REMOTE="myremote:/backup"
-RCLONE_MOUNT_POINT="$HOME/Mounts/Backup"
-
-# --- Custom SMB Settings ---
-SMB_IP="192.168.1.50"
-SMB_USER="admin"
-SMB_SHARE="Workspace"
-
-# --- Advanced: Override Rclone Flags ---
-# You can even change specific mounting flags:
 RCLONE_MOUNT_ARGS=(
-    "--volname" "MyCloud"
+    "--volname" "CloudStorage"
     "--vfs-cache-mode" "full"
-    "--vfs-cache-max-size" "100G"  # Increased cache size
+    "--vfs-cache-max-size" "20G"   # <--- Change cache size here
     "--no-modtime"
+    # Add your own flags here!
 )
 ```
-
-### Method 2: Direct Editing (Simple)
-If you don't care about Git updates, you can just edit `mount_manager.sh` directly as shown below:
-
 
 ### SMB Share Settings
 

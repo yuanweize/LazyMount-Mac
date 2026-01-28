@@ -72,19 +72,9 @@ BUNDLE_MOUNT_ARGS=("-noverify" "-noautofsck" "-owners" "off")
 # ====================
 #   LOAD EXTERNAL CONFIG
 # ====================
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOCAL_CONFIG="${SCRIPT_DIR}/mount_manager.local.sh"
-USER_RC="${HOME}/.lazymountrc"
+# (Code removed to support single-script deployment)
 
-if [ -f "$LOCAL_CONFIG" ]; then
-    echo "[Init] Loading local config: $LOCAL_CONFIG"
-    source "$LOCAL_CONFIG"
-elif [ -f "$USER_RC" ]; then
-    echo "[Init] Loading user config: $USER_RC"
-    source "$USER_RC"
-fi
-
-# Dynamic Variables (Constructed after loading config)
+# Dynamic Variables
 SMB_URL="smb://${SMB_USER}@${SMB_IP}/${SMB_SHARE}"
 if [ -n "$SMB_SHARE_PATH" ]; then
     # Support for subfolders in SMB share if needed
