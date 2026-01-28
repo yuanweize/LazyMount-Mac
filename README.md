@@ -27,9 +27,9 @@
   - [Prerequisites](#prerequisites)
   - [Install FUSE Interface](#2-install-fuse-interface-connection-layer)
 - [⚙️ Configuration](#configuration)
-- [🌍 Remote Access (Tailscale)](#remote-access-with-tailscale)
-- [🎮 Use Case Examples](#use-case-examples)
-- [📚 Detailed Beginner's Guide](#detailed-beginners-guide)
+- [🌍 Remote Access (Tailscale)](#-remote-access-with-tailscale)
+- [🎮 Use Case Examples](#-use-case-examples)
+- [📚 Detailed Beginner's Guide](#-detailed-beginners-guide)
 - [❓ FAQ / Troubleshooting](#faq)
 
 ---
