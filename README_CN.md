@@ -40,10 +40,10 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
 
 - 🎮 **[游戏库](#1-nas-上的-steam-游戏库)** — 把 Steam/Epic 游戏放在 NAS 上，玩起来跟本地一样
 - 💾 **[时间机器备份](#2-时间机器备份到远程服务器)** — 自动备份到远程服务器
-- 🎬 **[媒体库](#3-媒体服务器plexjellyfin-片源)** — 随时访问存放在家庭服务器上的电影/音乐
+- 🎬 **[媒体库](#3-媒体服务器-plex-jellyfin-片源)** — 随时访问存放在家庭服务器上的电影/音乐
 - 📁 **[项目归档](#5-公司项目归档)** — 大文件放在便宜的存储上，按需访问
-- ☁️ **[云存储](#4-google-drive--dropbox-当本地文件夹)** — 把 Google Drive、Dropbox 或任何 rclone 支持的服务挂载成本地文件夹
-- 🧠 **[AI 模型存储](#6-ai大模型存储库-ollama-lm-studio-等)** — 将大模型存放在网络驱动器上，节省本地 SSD 空间
+- ☁️ **[云存储](#4-google-drive-dropbox-当本地文件夹)** — 把 Google Drive、Dropbox 或任何 rclone 支持的服务挂载成本地文件夹
+- 🧠 **[AI 模型存储](#6-ai-大模型存储库)** — 将大模型存放在网络驱动器上，节省本地 SSD 空间
 
 **核心特性：**
 - 🔄 **开机自动挂载** — 不用手动点击
@@ -264,7 +264,7 @@ BUNDLE_VOLUME_NAME="TimeMachine"
 
 然后：系统设置 → 时间机器 → 选择磁盘 → 选择 "TimeMachine"
 
-### 3. 媒体服务器（Plex/Jellyfin 片源）
+### 3. 媒体服务器 (Plex Jellyfin 片源)
 
 访问存放在家庭服务器上的电影库：
 
@@ -275,7 +275,7 @@ RCLONE_MOUNT_POINT="$HOME/Movies/Server"
 RCLONE_IP="100.64.0.1"       # 服务器的 Tailscale IP
 ```
 
-### 4. Google Drive / Dropbox 当本地文件夹
+### 4. Google Drive Dropbox 当本地文件夹
 
 把云存储挂载成本地磁盘：
 
@@ -299,7 +299,7 @@ SMB_USER="employee"
 SMB_SHARE="Projects"
 ```
 
-### 6. 🧠 AI/大模型存储库 (Ollama, LM Studio 等)
+### 6. AI 大模型存储库
 
 把大语言模型 (LLaMA, Mistral, Qwen 等) 存在服务器上，而不是占用 Mac 有限的 SSD 空间：
 

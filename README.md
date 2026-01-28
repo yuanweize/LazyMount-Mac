@@ -40,10 +40,10 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
 
 - 🎮 **[Game Libraries](#1-steam-game-library-on-nas)** — Store Steam/Epic games on a NAS, play them like local installs
 - 💾 **[Time Machine Backups](#2-time-machine-to-remote-server)** — Back up to a remote server automatically
-- 🎬 **[Media Libraries](#3-media-server-plexjellyfin-source)** — Access your movie/music collection stored on a home server
+- 🎬 **[Media Libraries](#3-media-server-plex-jellyfin)** — Access your movie/music collection stored on a home server
 - 📁 **[Project Archives](#5-work-project-archives)** — Keep large files on cheaper storage, access them on-demand
-- ☁️ **[Cloud Storage](#4-google-drive--dropbox-as-local-folder)** — Mount Google Drive, Dropbox, or any rclone-supported service as a local folder
-- 🧠 **[AI Model Storage](#6-aillm-model-storage-ollama-lm-studio-etc)** — Run large LLMs (Ollama) from network storage to save 100GB+ SSD space
+- ☁️ **[Cloud Storage](#4-google-drive-dropbox-as-local-folder)** — Mount Google Drive, Dropbox, or any rclone-supported service as a local folder
+- 🧠 **[AI Model Storage](#6-ai-llm-model-storage)** — Run large LLMs (Ollama) from network storage to save 100GB+ SSD space
 
 **Key Features:**
 - 🔄 **Auto-mount at login** — No manual clicking required
@@ -264,7 +264,7 @@ BUNDLE_VOLUME_NAME="TimeMachine"
 
 Then: System Settings → Time Machine → Select Disk → Choose "TimeMachine"
 
-### 3. Media Server (Plex/Jellyfin Source)
+### 3. Media Server (Plex Jellyfin)
 
 Access your movie library stored on a home server:
 
@@ -275,7 +275,7 @@ RCLONE_MOUNT_POINT="$HOME/Movies/Server"
 RCLONE_IP="100.64.0.1"       # Tailscale IP of your server
 ```
 
-### 4. Google Drive / Dropbox as Local Folder
+### 4. Google Drive Dropbox as Local Folder
 
 Mount cloud storage as if it were a local drive:
 
@@ -299,7 +299,7 @@ SMB_USER="employee"
 SMB_SHARE="Projects"
 ```
 
-### 6. 🧠 AI/LLM Model Storage (Ollama, LM Studio, etc.)
+### 6. AI LLM Model Storage
 
 Store large language models (LLaMA, Mistral, Qwen, etc.) on a server instead of your Mac's limited SSD:
 
