@@ -57,7 +57,7 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
    | **Type** | User-space (NFS Bridging) | Kernel Extension (Kext) |
    | **Security** | ✅ **Safe** (No SIP changes) | ⚠️ **Low** (Must reduce security in Recovery Mode) |
    | **Stability** | ✅ High (Uses native macOS NFS) | ⚠️ Risk of kernel panics |
-   | **Best for** | macOS 12+ / Apple Silicon | Intel Macs / Legacy software |
+   | **Best for** | macOS 12+ / Apple Silicon (M-Series) | Intel Macs / Legacy software |
 
    **To install FUSE-T (Recommended):**
    ```bash
@@ -68,8 +68,22 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
    **To install macFUSE (If you prefer Kexts):**
    ```bash
    brew install --cask macfuse
-   # ⚠️ On Apple Silicon, you must reboot into Recovery Mode and enable Kernel Extensions!
    ```
+
+   <details>
+   <summary><strong>⚠️ How to enable macFUSE on Apple Silicon (M1/M2/M3/M4...)</strong></summary>
+
+   1. Shutdown your Mac.
+   2. Press and hold the **Power Button** until you see "Loading startup options".
+   3. Click **Options** -> **Continue**.
+   4. In the menu bar, choose **Utilities** -> **Startup Security Utility**.
+   5. Select your startup disk -> **Security Policy...**
+   6. Choose **Reduced Security** and check **"Allow user management of kernel extensions from identified developers"**.
+   7. Restart your Mac.
+   8. Go to **System Settings** -> **Privacy & Security** and allow the "Benjamin Fleischer" system extension.
+   9. Restart again.
+   </details>
+   <br>
 
 3. **(Recommended) Tailscale** — For remote access to home network:
    ```bash
@@ -364,17 +378,24 @@ brew --version
 # Install Rclone (for cloud/remote mounting)
 brew install rclone
 
-# Install macFUSE (required by Rclone)
-# ⚠️ This requires a restart after installation!
-brew install --cask macfuse
+# Install FUSE-T (Recommended for M-Series Macs)
+# It's newer, faster, and safer (no reboot required!)
+brew tap macos-fuse-t/homebrew-cask
+brew install fuse-t
 
-# (Optional) Install Tailscale for remote access
-brew install --cask tailscale
+# --- OR ---
+
+# Install macFUSE (Legacy, for Intel or specific needs)
+# ⚠️ Apple Silicon users will need to enable Kernel Extensions in Recovery Mode
+brew install --cask macfuse
 ```
 
-**After installing macFUSE:**
+**If you installed FUSE-T:**
+You are done! No restarts or security changes needed.
+
+**If you installed macFUSE:**
 1. Go to System Settings → Privacy & Security
-2. Scroll down and click "Allow" for the macFUSE extension
+2. Click "Allow" for the system extension
 3. **Restart your Mac**
 
 ### Step 3: Configure Rclone Remote

@@ -57,7 +57,7 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
    | **类型** | 用户态 (NFS 桥接) | 内核扩展 (Kernel Extension) |
    | **安全性** | ✅ **安全** (无需动 SIP) | ⚠️ **低** (需在恢复模式降低安全性) |
    | **稳定性** | ✅ 高 (使用原生 macOS NFS) | ⚠️ 有内核崩溃风险 |
-   | **适用** | macOS 12+ / Apple Silicon | Intel Mac / 旧版软件 |
+   | **适用** | macOS 12+ / Apple Silicon (M系芯片) | Intel Mac / 旧版软件 |
 
    **安装 FUSE-T (推荐):**
    ```bash
@@ -68,8 +68,22 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
    **安装 macFUSE (如果你偏好内核模式):**
    ```bash
    brew install --cask macfuse
-   # ⚠️ M1/M2/M3 用户必须重启进入恢复模式并启用内核扩展！
    ```
+
+   <details>
+   <summary><strong>⚠️ 如何在 Apple Silicon (M1/M2/M3/M4...) 上启用 macFUSE</strong></summary>
+
+   1. 关机。
+   2. 长按**电源键**直到出现 "正在加载启动选项 (Loading startup options)"。
+   3. 点击 **选项 (Options)** -> **继续**。
+   4. 在顶部菜单栏，选择 **实用工具 (Utilities)** -> **启动安全性实用工具 (Startup Security Utility)**。
+   5. 选择你的系统盘 -> **安全策略... (Security Policy)**。
+   6. 选择 **降低安全性 (Reduced Security)** 并勾选 **"允许用户管理来自被认可开发者的内核扩展"**。
+   7. 重启 Mac。
+   8. 进入 **系统设置** -> **隐私与安全性**，允许 "Benjamin Fleischer" 的系统扩展。
+   9. 再次重启。
+   </details>
+   <br>
 
 3. **（推荐）Tailscale** — 用于远程访问家庭网络：
    ```bash
@@ -364,17 +378,24 @@ brew --version
 # 安装 Rclone（用于云/远程挂载）
 brew install rclone
 
-# 安装 macFUSE（Rclone 依赖这个）
-# ⚠️ 安装后需要重启！
-brew install --cask macfuse
+# 安装 FUSE-T (推荐 M 系芯片 Mac)
+# 更新、更快、更安全（无需重启！）
+brew tap macos-fuse-t/homebrew-cask
+brew install fuse-t
 
-# （可选）安装 Tailscale 用于远程访问
-brew install --cask tailscale
+# --- 或者 ---
+
+# 安装 macFUSE (传统方式，适用于 Intel 或特定需求)
+# ⚠️ Apple Silicon 用户必须进恢复模式开启内核扩展
+brew install --cask macfuse
 ```
 
-**安装 macFUSE 后：**
+**如果你安装的是 FUSE-T：**
+恭喜，你已经搞定！无需重启，无需改安全设置。
+
+**如果你安装的是 macFUSE：**
 1. 打开系统设置 → 隐私与安全性
-2. 往下滑，点击允许 macFUSE 扩展
+2. 点击允许 "Benjamin Fleischer" 的系统扩展
 3. **重启 Mac**
 
 ### 第 3 步：配置 Rclone 远程存储
