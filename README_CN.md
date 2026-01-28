@@ -138,8 +138,6 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ## <a id="configuration"></a>⚙️ 配置说明
 
-## <a id="configuration"></a>⚙️ 配置说明
-
 所有配置均位于 `mount_manager.sh` 脚本顶部的 **USER CONFIGURATION** 区域。
 
 ```bash

@@ -138,8 +138,6 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ## <a id="configuration"></a>⚙️ Configuration
 
-## <a id="configuration"></a>⚙️ Configuration
-
 Configuration is managed by editing variables at the top of the `mount_manager.sh` script.
 
 ```bash
