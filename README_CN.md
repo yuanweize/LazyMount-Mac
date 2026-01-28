@@ -567,7 +567,7 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## ❓ 常见问题
+## 常见问题 (FAQ)
 
 ### Q: 挂载失败，提示 "permission denied"
 **A:** 确保 SMB 凭证已保存到钥匙串：
