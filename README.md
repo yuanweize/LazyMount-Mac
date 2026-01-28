@@ -26,11 +26,11 @@
 - [📦 Installation](#-installation)
   - [Prerequisites](#prerequisites)
   - [Install FUSE Interface](#2-install-fuse-interface-connection-layer)
-- [⚙️ Configuration](#configuration)
+- [⚙️ Configuration](#-configuration)
 - [🌍 Remote Access (Tailscale)](#-remote-access-with-tailscale)
 - [🎮 Use Case Examples](#-use-case-examples)
 - [📚 Detailed Beginner's Guide](#-detailed-beginners-guide)
-- [❓ FAQ / Troubleshooting](#faq)
+- [❓ FAQ / Troubleshooting](#-faq--troubleshooting)
 
 ---
 
@@ -135,7 +135,7 @@ launchctl load ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 Edit `~/Scripts/mount_manager.sh` and modify the **USER CONFIGURATION** section:
 
@@ -567,7 +567,7 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 
 ---
 
-## FAQ
+## ❓ FAQ / Troubleshooting
 
 ### Q: Mount fails with "permission denied"
 **A:** Ensure your SMB credentials are saved in Keychain:
