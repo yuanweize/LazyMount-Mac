@@ -67,7 +67,10 @@ SMB_SHARE="SharedFolder"                           # Override in .local.sh
 BUNDLE_PATH=""                                     # Override in .local.sh
 BUNDLE_VOLUME_NAME=""                              # Override in .local.sh
 # Custom hdiutil flags (e.g. -noverify, -readonly)
-BUNDLE_MOUNT_ARGS=("-noverify" "-noautofsck" "-owners" "off")
+# Note: -noautofsck and -noverify are REMOVED by default to ensure APFS
+# consistency on network shares. Skipping fsck can leave the volume in
+# a dirty state after unclean SMB disconnect, causing read-only mounts.
+BUNDLE_MOUNT_ARGS=("-autofsck" "-verify" "-owners" "off")
 
 # ====================
 #   LOAD EXTERNAL CONFIG
@@ -152,6 +155,52 @@ function mount_smb() {
                 
                 if [ -d "/Volumes/$BUNDLE_VOLUME_NAME" ]; then
                     log "Sparse Bundle mounted successfully (Took $((t_end - t_start))s)."
+                    
+                    # --- Post-mount health check ---
+                    # Check if volume is writable (not stuck in read-only mode)
+                    local test_file="/Volumes/$BUNDLE_VOLUME_NAME/.lazymount_write_test"
+                    if touch "$test_file" 2>/dev/null; then
+                        rm -f "$test_file"
+                        log "Volume is writable. Health OK."
+                    else
+                        log "WARNING: Volume is READ-ONLY. Running fsck + remount..."
+                        
+                        # 1. Detach the broken mount
+                        /usr/bin/hdiutil detach "/Volumes/$BUNDLE_VOLUME_NAME" -force 2>/dev/null
+                        sleep 2
+                        
+                        # 2. Attach WITHOUT mounting, to get the device node for fsck
+                        log "Attaching bundle for filesystem repair..."
+                        local dev_node
+                        dev_node=$(/usr/bin/hdiutil attach -nomount -noverify -noautofsck "$BUNDLE_PATH" 2>&1 | grep -oE '/dev/disk[0-9]+' | head -1)
+                        
+                        if [ -n "$dev_node" ]; then
+                            # 3. Run fsck_apfs on the raw device node
+                            log "Running fsck_apfs on $dev_node..."
+                            local fsck_output
+                            fsck_output=$(/sbin/fsck_apfs -q -y "$dev_node" 2>&1)
+                            log "fsck_apfs result: $fsck_output"
+                            
+                            # 4. Detach the nomount attachment
+                            /usr/bin/hdiutil detach "$dev_node" -force 2>/dev/null
+                            sleep 2
+                        else
+                            log "WARNING: Could not get device node for fsck. Trying diskutil repair..."
+                        fi
+                        
+                        # 5. Re-attach the bundle (now with fsck already done)
+                        log "Re-attaching sparse bundle..."
+                        /usr/bin/hdiutil attach "$BUNDLE_PATH" "${BUNDLE_MOUNT_ARGS[@]}" -mountpoint "/Volumes/$BUNDLE_VOLUME_NAME"
+                        sleep 2
+                        
+                        # 6. Verify writability
+                        if touch "$test_file" 2>/dev/null; then
+                            rm -f "$test_file"
+                            log "Volume is now writable after fsck repair."
+                        else
+                            log "ERROR: Volume still read-only after fsck. Manual intervention required."
+                        fi
+                    fi
                 else
                     log "Error: hdiutil finished but volume not found."
                 fi
