@@ -113,13 +113,25 @@ function check_and_update() {
         return 0
     fi
     
-    log "Update" "Checking for updates (current version: $SCRIPT_VERSION)..."
+    log "Update" "Checking for updates (current version: $SCRIPT_VERSION) in background..."
     
-    # Fetch remote script to temp file
+    # Fetch remote script to temp file (with retries for slow boot networking)
     local temp_script="/tmp/mount_manager_update_$$.sh"
-    if ! /usr/bin/curl -fsSL --connect-timeout 10 --max-time 30 "$GITHUB_RAW_URL" -o "$temp_script" 2>/dev/null; then
-        log "Update" "Failed to fetch remote script. Skipping update."
-        /bin/rm -f "$temp_script"
+    local max_retries=12  # up to 60 seconds
+    local retry_count=0
+    local fetch_success=false
+    
+    while [ $retry_count -lt $max_retries ]; do
+        if /usr/bin/curl -fsSL --connect-timeout 5 "$GITHUB_RAW_URL" -o "$temp_script" 2>/dev/null; then
+            fetch_success=true
+            break
+        fi
+        sleep 5
+        ((retry_count++))
+    done
+    
+    if [ "$fetch_success" != "true" ]; then
+        log "Update" "Failed to fetch remote script after 60s. Skipping update."
         return 0
     fi
     
@@ -418,8 +430,8 @@ echo "=== Mount Session Started: $(date) ==="
 # Clean up background processes on exit
 trap 'kill $(jobs -p) 2>/dev/null' EXIT
 
-# Check for updates before mounting
-check_and_update
+# Run auto-update check in the background (so it doesn't block mounting)
+( check_and_update ) &
 
 # Run SMB mounting in background
 mount_smb &
