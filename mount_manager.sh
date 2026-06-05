@@ -2,7 +2,7 @@
 
 # ==========================================
 #      LazyMount - Universal Mount Manager
-#      Version: 2.1 (Performance & Auto-Recovery)
+#      Version: 2.2 (Auto-Update Test)
 #      https://github.com/yuanweize/LazyMount-Mac
 # ==========================================
 #
@@ -21,7 +21,7 @@
 # ==========================================
 
 # --- Script Version (for auto-update) ---
-SCRIPT_VERSION="2.1"
+SCRIPT_VERSION="2.2"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/mount_manager.sh"
 
 # ====================
