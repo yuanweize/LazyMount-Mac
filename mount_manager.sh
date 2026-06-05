@@ -36,8 +36,8 @@ RCLONE_BIN="/usr/local/bin/rclone"
 RCLONE_IP="100.100.100.100"                        # Tailscale IP or 8.8.8.8
 
 # Advanced Rclone Flags (Array for easy customization)
+# Note: --volname is set dynamically based on RCLONE_MOUNT_POINT, do not hardcode it here.
 RCLONE_MOUNT_ARGS=(
-    "--volname" "CloudStorage"
     "--vfs-cache-mode" "full"
     "--vfs-cache-max-size" "20G"
     "--vfs-cache-max-age" "24h"
@@ -95,6 +95,7 @@ fi
 # Dynamic Variables
 SMB_URL="smb://${SMB_USER}@${SMB_IP}/${SMB_SHARE}"
 SMB_MOUNT_POINT="/Volumes/${SMB_SHARE}"
+RCLONE_VOLNAME="$(basename "$RCLONE_MOUNT_POINT")"
 
 # ====================
 #   MAIN LOGIC
@@ -264,6 +265,7 @@ function mount_rclone() {
     # 3. Execute mount using array arguments
     # We use "${RCLONE_MOUNT_ARGS[@]}" to properly expand the array
     "$RCLONE_BIN" mount "$RCLONE_REMOTE" "$RCLONE_MOUNT_POINT" \
+        "--volname" "$RCLONE_VOLNAME" \
         "${RCLONE_MOUNT_ARGS[@]}"
 }
 
