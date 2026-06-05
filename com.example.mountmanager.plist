@@ -10,12 +10,13 @@
         
         Installation:
         1. Copy to ~/Library/LaunchAgents/
-        2. Edit YOUR_USERNAME to your actual macOS username
-        3. Run: launchctl load ~/Library/LaunchAgents/com.example.mountmanager.plist
+        2. Rename to com.lazymount.plist
+        3. Edit YOUR_USERNAME to your actual macOS username
+        4. Run: launchctl load ~/Library/LaunchAgents/com.lazymount.plist
     -->
     
     <key>Label</key>
-    <string>com.example.mountmanager</string>
+    <string>com.lazymount</string>
     
     <key>ProgramArguments</key>
     <array>
