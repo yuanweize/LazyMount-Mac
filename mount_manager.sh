@@ -21,7 +21,7 @@
 # ==========================================
 
 # --- Script Version (for auto-update) ---
-SCRIPT_VERSION="2.3"
+SCRIPT_VERSION="2.4"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/mount_manager.sh"
 
 # ====================
@@ -77,7 +77,7 @@ BUNDLE_VOLUME_NAME=""                              # Override in .local.sh
 # Note: -noautofsck is kept to ensure APFS consistency on network shares.
 # -noverify skips disk image checksum verification (not filesystem check)
 # to reduce SMB I/O load during mount. APFS integrity is handled by -autofsck.
-BUNDLE_MOUNT_ARGS=("-autofsck" "-noverify" "-owners" "off")
+BUNDLE_MOUNT_ARGS=("-autofsck" "-noverify")
 
 # ====================
 #   LOAD EXTERNAL CONFIG
