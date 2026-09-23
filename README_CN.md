@@ -53,12 +53,31 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
 - **[云存储](#4-google-drive-dropbox-当本地文件夹)** — 把 Google Drive、Dropbox 或任何 rclone 支持的服务挂载成本地文件夹
 - **[AI 模型存储](#6-ai-大模型存储库)** — 将大模型存放在网络驱动器上，节省本地 SSD 空间
 
-**核心特性 (v2.3)：**
+**核心特性 (v2.4)：**
 - **开机自动挂载** — 不用手动点击
 - **自动恢复守护** — 后台持续监控 APFS 健康状态，使用轻量级 `df` 检测避免 APFS-over-SMB sync 限制导致的误判，仅在卷真正无响应时触发重连恢复
 - **随处可用** — 通过 Tailscale 远程访问家里的存储
 - **双模式** — 同时支持 SMB（局域网）和 Rclone（云存储/远程）
 - **极速挂载** — 跳过网络镜像低效校验，APFS 磁盘映像挂载速度提升 3 倍
+
+---
+
+## 架构与生命周期 (Architecture)
+
+```mermaid
+graph TD
+    Boot["macOS 开机 / 用户登录"] --> Launchd["Launchd 守护进程 (com.lazymount.plist)"]
+    Launchd --> Script["mount_manager.sh (v2.4)"]
+    Script --> NetCheck{"网络连通性与 Tailscale 探测"}
+    NetCheck -- 畅通 --> Mounts["执行挂载流程"]
+    NetCheck -- 异常 --> Retry["指数退避重试 (Exponential Backoff)"]
+    Mounts --> SMB["SMB 局域网/远程文件共享"]
+    Mounts --> Rclone["Rclone VFS (SFTP/WebDAV/云端)"]
+    SMB --> APFS["挂载 APFS Sparsebundle (-noverify 极速模式)"]
+    APFS --> HealthMon["后台 APFS 健康探测守护进程"]
+    HealthMon -- 超时 / 卡死 --> AutoHeal["自动卸载故障卷并无缝重新接入"]
+    HealthMon -- 正常 --> Notify["系统级桌面挂载通知"]
+```
 
 ---
 

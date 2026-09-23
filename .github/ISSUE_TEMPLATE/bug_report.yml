@@ -1,0 +1,51 @@
+name: Bug Report
+description: Report an issue or mount failure in LazyMount-Mac.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! **Please sanitize credentials, SMB passwords, or server addresses in your report.**
+  - type: dropdown
+    id: macos_version
+    attributes:
+      label: macOS Version & Architecture
+      options:
+        - macOS 15 Sequoia (Apple Silicon)
+        - macOS 15 Sequoia (Intel)
+        - macOS 14 Sonoma (Apple Silicon)
+        - macOS 14 Sonoma (Intel)
+        - macOS 13 Ventura or older
+    validations:
+      required: true
+  - type: dropdown
+    id: mount_type
+    attributes:
+      label: Mount Storage Type
+      options:
+        - SMB Share
+        - Rclone (WebDAV / SFTP / S3 / Google Drive)
+        - APFS Sparsebundle
+        - Combination / Hybrid
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description
+      description: Describe what failed or unexpected behavior occurred.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How is the script executed (manual, launchd daemon, etc.)?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized Log Output
+      description: Contents of `/tmp/mount_manager.log` (with personal credentials redacted).
+      render: shell
