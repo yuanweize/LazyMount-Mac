@@ -12,11 +12,15 @@
 .  
 ├──[README.md](README.md) — English Documentation  
 ├──[README_CN.md](README_CN.md) — Chinese Documentation  
+├──[CHANGELOG.md](CHANGELOG.md) — Version history and migration notes
 ├──[LICENSE](LICENSE) — MIT License  
-├──[mount_manager.sh](mount_manager.sh) — Core script: Auto-mounts SMB/Rclone  
-├──[mount_manager.example.local.sh](mount_manager.example.local.sh) — Example local config (copy to `mount_manager.local.sh`)  
-├──[com.lazymount.plist](com.lazymount.plist) — LaunchAgent for mount script  
-└──[com.ollama.startup.plist](com.ollama.startup.plist) — LaunchAgent for Ollama Service (AI)  
+├──[install.sh](install.sh) / [install.py](install.py) — Per-user install, update, migration and rollback
+├──[mount_manager.sh](mount_manager.sh) — SMB/Rclone configuration and worker launcher
+├──[lazymount_runtime.py](lazymount_runtime.py) — DiskImages2/APFS verification and recovery
+├──[mount_manager.example.local.sh](mount_manager.example.local.sh) — Configuration example (installer preserves actual local config)
+├──[com.lazymount.plist](com.lazymount.plist) — Template; generated on install
+├──[tests](tests) — Unit and opt-in APFS integration tests
+└──[docs/validation-v3.md](docs/validation-v3.md) — Verification report and remaining limits
 
 
 ---
@@ -58,12 +62,15 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
 - **[Cloud Storage](#4-google-drive-dropbox-as-local-folder)** — Mount Google Drive, Dropbox, or any rclone-supported service as a local folder
 - **[AI Model Storage](#6-ai-llm-model-storage)** — Run large LLMs (Ollama) from network storage to save 100GB+ SSD space
 
-**Key Features (v2.4):**
-- **Auto-mount at login** — No manual clicking required
-- **Self-healing** — Background health monitor detects unresponsive APFS volumes and auto-recovers (uses lightweight `df` checks, avoids false positives from APFS-over-SMB sync limitations)
-- **Works anywhere** — Access home storage remotely via Tailscale
-- **Dual-mode** — Supports both SMB (local) and Rclone (cloud/remote)
-- **Optimized APFS Mounting** — Bypasses redundant remote checksum calculation via the `-noverify` flag to accelerate APFS attach over network shares
+**Key features (v3.0.2):**
+- **Per-user installer** — resolves the home directory automatically, migrates legacy launchd Labels, and preserves local settings
+- **Independent SMB and Rclone workers** — a degraded APFS image does not stop network and cloud shares
+- **APFS write verification** — exclusive 4 KiB create/write/fsync/readback/cleanup; `df` alone is not a health check
+- **DiskImages2 where supported** — newer macOS uses `diskutil image attach`; legacy systems retain `hdiutil` without mixing backends on failure
+- **Conservative recovery** — UUID-verified normal eject/reattach, idle checks, cooldown, and backup-approved offline First Aid only if necessary
+- **Tailscale-compatible** — network reachability and retry without hardcoded local usernames
+
+**Important:** APFS sparsebundles on a network share are not equivalent to local SSD storage; stable SMB access, free physical NAS space, and backups still matter. Large images can take minutes for `diskutil image attach` to finish gathering band statistics even after the volume appears.
 
 ---
 
@@ -71,17 +78,22 @@ Mac storage is **expensive** — a 1TB upgrade can cost $200+. LazyMount solves 
 
 ```mermaid
 graph TD
-    Boot["macOS Boot / User Login"] --> Launchd["Launchd Agent (com.lazymount.plist)"]
-    Launchd --> Script["mount_manager.sh (v2.4)"]
-    Script --> NetCheck{"Network & Tailscale Check"}
-    NetCheck -- Reachable --> Mounts["Mount Targets"]
-    NetCheck -- Unreachable --> Retry["Exponential Backoff & Retry"]
-    Mounts --> SMB["SMB Network Shares"]
-    Mounts --> Rclone["Rclone VFS (SFTP/Cloud)"]
-    SMB --> APFS["Attach APFS Sparsebundles (-noverify)"]
-    APFS --> HealthMon["Background Health Monitor"]
-    HealthMon -- Timeout / Hang --> AutoHeal["Auto Force-Unmount & Recovery"]
-    HealthMon -- OK --> Notify["Native macOS Notifications"]
+    Login["macOS user login"] --> Agent["launchd: com.lazymount"]
+    Agent --> Runtime["Python v3 runtime and process lock"]
+    Runtime --> SMB["SMB worker"]
+    Runtime --> Rclone["Rclone worker"]
+    Runtime --> APFS["APFS worker: UUID and physical-store identity"]
+    APFS --> Backend{"DiskImages2 available?"}
+    Backend -- Yes --> Modern["diskutil image attach"]
+    Backend -- No --> Legacy["hdiutil legacy attach"]
+    Modern --> Probe["Exclusive write / fsync / readback"]
+    Legacy --> Probe
+    Probe -- Pass --> Healthy["Healthy / Verified"]
+    Probe -- Fail --> Degraded["Degraded: classify errno"]
+    Degraded --> Safe["Idle check / normal reattach / cooldown"]
+    Safe --> Backup{"Offline repair approved?"}
+    Backup -- Yes --> Aid["verifyVolume / repairVolume / verifyVolume if needed"]
+    Backup -- No --> Degraded
 ```
 
 ---
@@ -174,10 +186,7 @@ The script automatically loads `mount_manager.local.sh` from the same directory 
 **Setup:**
 
 ```bash
-# Copy the example config
-cp mount_manager.example.local.sh ~/Scripts/mount_manager.local.sh
-
-# Edit with your settings
+# The installer creates this if absent; never overwrite existing local settings
 nano ~/Scripts/mount_manager.local.sh
 ```
 
@@ -185,7 +194,7 @@ nano ~/Scripts/mount_manager.local.sh
 
 ```bash
 # --- Global Settings ---
-# AUTO_UPDATE_ENABLED="true"                     # Set to "false" to disable auto-update
+# v3 releases update via ./install.sh update; AUTO_UPDATE_ENABLED is ignored
 
 # --- Rclone Configuration ---
 RCLONE_REMOTE="myremote:/path/to/folder"
@@ -674,7 +683,7 @@ v3 creates a dedicated 4 KiB file, writes, fsyncs, reads back and removes it. An
 
 Recovery checks open handles and only performs normal unmount/reattach. It never force-ejects or kills games. Plists link the image path, physical stores, container and volume UUID; device IDs are resolved again before operations. Before filesystem repair, confirm a recoverable backup and set `BUNDLE_REPAIR_APPROVED_UUID` to that volume UUID. Without approval, only normal reattach is attempted. Nonzero repair status stays Degraded.
 
-The old claim that all APFS-over-SMB write failures are harmless sync limitations is incorrect. Investigate ENOTSUP at its actual failing stage. See the [APFS recovery guide](docs/guides/apfs-sparsebundle-nas-recovery.md) for command semantics and recovery limits.
+The old claim that all APFS-over-SMB write failures are harmless sync limitations is incorrect. Investigate ENOTSUP at its actual failing stage. v3.0.2 no longer forces image ownership on attach: the affected network image contained a root-owned filesystem root, so forcing ownership caused EACCES (13) on new file creation despite writable game subdirectories. Omitting the override restored macOS's disabled-ownership policy and the real APFS root passed write/fsync/readback after an automatic DiskImages2 mount. Ownership is a filesystem security setting; do not change ownership/ACLs globally just to bypass EACCES. See the [APFS recovery guide](docs/guides/apfs-sparsebundle-nas-recovery.md) for command semantics and recovery limits.
 
 ---
 
@@ -704,3 +713,7 @@ Contributions welcome! Please feel free to submit pull requests.
 ---
 
 **Made with ❤️ for Mac users who refuse to pay Apple's storage tax.**
+
+### v3.0.2 image backend
+
+LazyMount detects `diskutil image attach` support and prefers DiskImages2. Only systems without this capability use legacy hdiutil. A failed modern attachment never falls back to the old driver. On the affected NAS, legacy DiskImages band F_FULLSYNC returned ENOTSUP; a disposable image using DiskImages2 passed write/fsync/readback and normal eject. This is a backend-specific observation, not a claim about every SMB server.

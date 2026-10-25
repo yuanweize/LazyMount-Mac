@@ -12,7 +12,8 @@ import lazymount_runtime as lm
 
 if sys.platform != 'darwin' or os.environ.get('LAZYMOUNT_TEST_APFS') != '1':
     sys.exit('Opt in on macOS: LAZYMOUNT_TEST_APFS=1 python3 tests/integration_apfs.py')
-root = Path(tempfile.mkdtemp(prefix='lazymount-test-')).resolve()
+root = Path(tempfile.mkdtemp(prefix='lazymount-test-',
+                             dir=os.environ.get('LAZYMOUNT_TEST_DIR'))).resolve()
 image = root / 'Test.sparsebundle'
 point = root / 'volume'; point.mkdir()
 print('Disposable test artifacts:', root, flush=True)
@@ -37,11 +38,14 @@ try:
 finally:
     current = manager.identity()
     if current:
-        subprocess.run([lm.HDIUTIL, 'detach', current['container']['ContainerReference']], check=True)
+        subprocess.run([lm.DISKUTIL, 'eject', current['container']['ContainerReference']], check=True)
     lock.close()
 
 # Real mounted-but-read-only case; all writes remain inside the disposable image.
-lm.run([lm.HDIUTIL, 'attach', '-plist', '-readonly', '-noautofsck', '-mountpoint', str(point), str(image)], mutate=True)
+if lm.modern_images_available():
+    lm.run([lm.DISKUTIL, 'image', 'attach', '--plist', '--readOnly', '--mountPoint', str(point), str(image)], mutate=True)
+else:
+    lm.run([lm.HDIUTIL, 'attach', '-plist', '-readonly', '-noautofsck', '-mountpoint', str(point), str(image)], mutate=True)
 lock = lm.Lock(manager.lock_file)
 try:
     assert not manager.probe()['ok']
@@ -51,7 +55,7 @@ try:
 finally:
     current = manager.identity()
     if current:
-        lm.run([lm.HDIUTIL, 'detach', current['container']['ContainerReference']], mutate=True)
+        lm.run([lm.DISKUTIL, 'eject', current['container']['ContainerReference']], mutate=True)
     lock.close()
 
 # Damage only a copy of our disposable image header, never a user image.

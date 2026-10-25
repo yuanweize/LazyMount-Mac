@@ -25,7 +25,7 @@ reviewing and removing that image's saved state while the service is stopped.
 Close Steam/Epic and other writers normally. Recovery checks handles with lsof,
 then requests normal `diskutil unmountDisk`. Busy or uncertain inspection aborts;
 there is no force option, game termination, formatting, token deletion or band edit.
-Normal reattachment explicitly uses `-owners on` and validates actual writes.
+Normal reattachment leaves ownership policy to macOS rather than forcibly enabling owners. This matches the manual Disk Utility mounting semantics more closely, but an already-enabled persistent volume ownership policy may still need separate administrative correction. A root-owned volume with ownership enabled can reject creates at its root with EACCES even when user-owned subdirectories work; never respond by automatically bypassing ACLs or changing file owners.
 
 ## First Aid and command semantics
 
@@ -65,3 +65,18 @@ Sources: [Apple First Aid guide](https://support.apple.com/en-us/102611), and th
 installed macOS `man diskutil`, `man fsck_apfs`, `man hdiutil`. The command behavior
 above was checked on macOS 27.0.1; older supported APFS systems still need runtime
 qualification. Python 3.9+ is required on both Intel and Apple Silicon.
+
+### v3.0.2 image backend
+
+LazyMount detects `diskutil image attach` support and prefers DiskImages2. Only systems without this capability use legacy hdiutil. A failed modern attachment never falls back to the old driver. On the affected NAS, legacy DiskImages band F_FULLSYNC returned ENOTSUP; a disposable image using DiskImages2 passed write/fsync/readback and normal eject. This is a backend-specific observation, not a claim about every SMB server.
+
+To reproduce the integration tests on your own network share without touching
+existing images, set `LAZYMOUNT_TEST_DIR` to its mounted directory alongside
+`LAZYMOUNT_TEST_APFS=1`. The tests create a uniquely named 128 MiB image directory.
+Large sparsebundles can take several minutes to return from modern attach while the CLI
+counts allocated bands, even after the volume becomes visible. The service must keep
+its image lock until that CLI returns, then run the write probe. This is separate
+from the 10-second write-probe deadline. A root-owned volume may yield EACCES at
+its root when ownership is forcibly enabled, while an existing owner-writable
+subdirectory passes fsync/readback. Do not infer APFS corruption or bypass
+security permissions from this mismatch.

@@ -2,7 +2,7 @@
 
 # ==========================================
 #      LazyMount - Universal Mount Manager
-#      Version: 3.0.0 (Verified APFS recovery)
+#      Version: 3.0.2 (DiskImages2 ownership compatibility)
 #      https://github.com/yuanweize/LazyMount-Mac
 # ==========================================
 #
@@ -21,7 +21,7 @@
 # ==========================================
 
 # --- Script Version (for auto-update) ---
-SCRIPT_VERSION="3.0.0"
+SCRIPT_VERSION="3.0.2"
 
 # ====================
 #   DEFAULT CONFIGURATION
@@ -78,7 +78,7 @@ BUNDLE_VOLUME_UUID=""
 BUNDLE_REPAIR_APPROVED_UUID=""
 BUNDLE_CHECK_INTERVAL=300
 BUNDLE_RECOVERY_COOLDOWN=3600
-# Legacy BUNDLE_MOUNT_ARGS is ignored; attach uses -noautofsck -owners on.
+# Legacy BUNDLE_MOUNT_ARGS is ignored; runtime selects the supported image backend.
 
 # ====================
 #   LOAD EXTERNAL CONFIG

@@ -2,6 +2,7 @@
 """LazyMount 3: bounded probes, plist identity, conservative APFS recovery."""
 import errno
 import fcntl
+import functools
 import hashlib
 import json
 import os
@@ -70,6 +71,38 @@ def plist(args):
         return plistlib.loads(run(args))
     except (ValueError, plistlib.InvalidFileException) as exc:
         raise Failure('invalid plist response') from exc
+
+
+@functools.lru_cache(maxsize=1)
+def modern_images_available():
+    """Probe capabilities rather than assume architecture or OS version."""
+    result = subprocess.run([DISKUTIL, 'image', 'attach', '--help'],
+                            capture_output=True, timeout=10)
+    return result.returncode == 0 and b'--noMount' in result.stdout
+
+
+def attach_image(image, mountpoint=None):
+    if modern_images_available():
+        log('APFS attaching via DiskImages2' + (' (offline)' if mountpoint is None else ''))
+        args = [DISKUTIL, 'image', 'attach', '--plist']
+        if mountpoint is None:
+            args += ['--noMount']
+        else:
+            # Match Finder/Disk Utility's default ownership policy. Forcing
+            # 'owners' can make an existing root-owned image appear unwritable
+            # to its user even when SteamLibrary subdirectories are writable.
+            args += ['--mountPoint', mountpoint]
+    else:
+        log('APFS attaching via legacy DiskImages (modern interface unavailable)')
+        args = [HDIUTIL, 'attach', '-plist', '-noautofsck']
+        if mountpoint is None:
+            args += ['-nomount']
+        else:
+            # Legacy backend also leaves volume ownership at its macOS default.
+            args += ['-mountpoint', mountpoint]
+    # Do not fall back to the legacy driver after a modern attach failure: an
+    # attachment may already exist and the backends have different SMB behavior.
+    return run(args + [image], mutate=True)
 
 
 def probe_worker(directory):
@@ -182,10 +215,9 @@ class APFS:
             return {'ok': False, 'kind': 'timeout', 'detail': str(exc)}
 
     def attach(self):
-        # No unconditional fsck on boot. Read-only attach flags/owners-off overrides
-        # cannot silently undermine the recovery contract.
-        run([HDIUTIL, 'attach', '-plist', '-noautofsck', '-owners', 'on',
-             '-mountpoint', self.mountpoint, self.image], mutate=True)
+        # Prefer DiskImages2 on supported macOS; respect OS ownership policy.
+        # No unconditional First Aid and no fallback after a failed modern attach.
+        attach_image(self.image, self.mountpoint)
 
     def idle(self, identity):
         for volume in identity['container'].get('Volumes', []):
@@ -226,7 +258,7 @@ class APFS:
                     whole.append(device)
         if len(whole) != 1:
             raise Failure('image whole disk is ambiguous')
-        run([HDIUTIL, 'detach', whole[0]], mutate=True)
+        run([DISKUTIL, 'eject', whole[0]], mutate=True)
         self.attach()
         current = self.identity()
         if not current or current['volume'].get('MountPoint') != self.mountpoint:
@@ -264,7 +296,12 @@ class APFS:
         current = self.identity()
         if not current:
             raise Failure('identity lost before mount')
-        run([DISKUTIL, 'mount', '-mountPoint', self.mountpoint, current['volume']['DeviceIdentifier']], mutate=True)
+        args = [DISKUTIL, 'mount']
+        default_point = '/Volumes/' + current['volume'].get('VolumeName', '')
+        if self.mountpoint != default_point:
+            Path(self.mountpoint).mkdir(parents=False, exist_ok=True)
+            args += ['-mountPoint', self.mountpoint]
+        run(args + [current['volume']['DeviceIdentifier']], mutate=True)
         current = self.identity()
         if not current or current['volume'].get('MountPoint') != self.mountpoint:
             raise Failure('mount verification failed')
@@ -298,7 +335,7 @@ class APFS:
                     # A damaged filesystem may be attachable without mounting.
                     # Never guess identity when its APFS metadata is unreadable.
                     if not self.identity():
-                        run([HDIUTIL, 'attach', '-plist', '-nomount', '-noautofsck', self.image], mutate=True)
+                        attach_image(self.image)
                 current = self.identity()
             if not current:
                 raise Failure('attach did not produce the expected APFS volume')

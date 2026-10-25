@@ -25,6 +25,38 @@ class RecoveryTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_modern_backend_selected_without_legacy_fallback(self):
+        with patch.object(lm, 'modern_images_available', return_value=True), patch.object(lm, 'run', side_effect=lm.Failure('attach failed')) as command:
+            with self.assertRaises(lm.Failure):
+                self.manager.attach()
+            command.assert_called_once()
+            self.assertEqual(command.call_args.args[0][:3], [lm.DISKUTIL, 'image', 'attach'])
+            self.assertNotIn('--mountOptions', command.call_args.args[0])
+            self.assertIn('--mountPoint', command.call_args.args[0])
+
+    def test_legacy_backend_for_older_macos_only(self):
+        with patch.object(lm, 'modern_images_available', return_value=False), patch.object(lm, 'run') as command:
+            self.manager.attach()
+            self.assertEqual(command.call_args.args[0][:2], [lm.HDIUTIL, 'attach'])
+            self.assertIn('-noautofsck', command.call_args.args[0])
+            self.assertNotIn('-owners', command.call_args.args[0])
+
+    def test_modern_offline_attach_never_mounts(self):
+        with patch.object(lm, 'modern_images_available', return_value=True), patch.object(lm, 'run') as command:
+            lm.attach_image(self.manager.image)
+            self.assertIn('--noMount', command.call_args.args[0])
+            self.assertNotIn('--mountPoint', command.call_args.args[0])
+
+    def test_offline_mount_default_volume_needs_no_root_mkdir(self):
+        self.manager.approved = 'UUID'
+        self.identity['volume']['VolumeName'] = 'Test'
+        with patch.object(self.manager, 'unmount', return_value=self.identity), patch.object(self.manager, 'identity', return_value=self.identity), patch.object(self.manager, 'probe', return_value={'ok': True}), patch.object(lm, 'run') as command, patch.object(Path, 'mkdir') as mkdir:
+            self.manager.offline_repair()
+            mount_commands = [c.args[0] for c in command.call_args_list if 'mount' in c.args[0]]
+            self.assertEqual(mount_commands, [[lm.DISKUTIL, 'mount', 'disk99s1']])
+            self.assertFalse(any(c.args and c.args[0] == '/Volumes/Test' for c in mkdir.call_args_list))
+            self.assertEqual(self.manager.state, 'Verified')
+
     def test_mounted_but_unwritable_enters_recovery(self):
         with patch.object(self.manager, 'identity', return_value=self.identity), patch.object(self.manager, 'probe', return_value={'ok': False, 'kind': 'io'}), patch.object(self.manager, 'recover') as recovery:
             self.manager.cycle()

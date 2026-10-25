@@ -141,7 +141,7 @@ def main(action):
         call(['/usr/bin/plutil', '-lint', str(PLIST)])
         call(['launchctl', 'enable', DOMAIN + '/com.lazymount'])
         call(['launchctl', 'bootstrap', DOMAIN, str(PLIST)])
-        print('Installed LazyMount 3.0.0; Label=com.lazymount; backup=' + str(backup))
+        print('Installed LazyMount 3.0.2; Label=com.lazymount; backup=' + str(backup))
         return 0
     except Exception:
         # Restore the complete prior installation after a failed deployment.

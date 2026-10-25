@@ -16,7 +16,7 @@ Using a macOS **LaunchAgent** (`~/Library/LaunchAgents/com.lazymount.plist`) com
 
 - **Silent background execution** (no Finder popups).
 - **Pre-mount network socket verification** (`ping` / `nc` before issuing `mount_smbfs`).
-- **Sleep/Wake monitoring** via `KeepAlive` or `WatchPaths`.
+- **Continuing background health checks** under launchd KeepAlive; a complete sleep/wake regression test is still pending.
 - **Decoupled credential management** via macOS Keychain.
 
 ---

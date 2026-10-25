@@ -12,11 +12,15 @@
 .  
 ├──[README.md](README.md) — 英文文档  
 ├──[README_CN.md](README_CN.md) — 中文文档  
+├──[CHANGELOG.md](CHANGELOG.md) — 版本变更及升级说明
 ├──[LICENSE](LICENSE) — MIT 许可证  
-├──[mount_manager.sh](mount_manager.sh) — 核心脚本：自动挂载 SMB/Rclone  
-├──[mount_manager.example.local.sh](mount_manager.example.local.sh) — 本地配置示例（复制为 `mount_manager.local.sh` 使用）  
-├──[com.lazymount.plist](com.lazymount.plist) — 挂载脚本的 LaunchAgent 配置  
-└──[com.ollama.startup.plist](com.ollama.startup.plist) — Ollama 服务启动配置 (AI)  
+├──[install.sh](install.sh) / [install.py](install.py) — 自动安装、升级、旧版本迁移及失败回滚
+├──[mount_manager.sh](mount_manager.sh) — SMB/Rclone 配置与启动脚本
+├──[lazymount_runtime.py](lazymount_runtime.py) — DiskImages2/APFS 校验及恢复引擎
+├──[mount_manager.example.local.sh](mount_manager.example.local.sh) — 配置示例（真实用户配置由安装器保留）
+├──[com.lazymount.plist](com.lazymount.plist) — LaunchAgent 模板，安装时自动生成
+├──[tests](tests) — 单元测试和可选 APFS 实测
+└──[docs/validation-v3.md](docs/validation-v3.md) — 测试记录和适用限制
 
 
 ---
@@ -53,12 +57,15 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
 - **[云存储](#4-google-drive-dropbox-当本地文件夹)** — 把 Google Drive、Dropbox 或任何 rclone 支持的服务挂载成本地文件夹
 - **[AI 模型存储](#6-ai-大模型存储库)** — 将大模型存放在网络驱动器上，节省本地 SSD 空间
 
-**核心特性 (v2.4)：**
-- **开机自动挂载** — 不用手动点击
-- **自动恢复守护** — 后台持续监控 APFS 健康状态，使用轻量级 `df` 检测避免 APFS-over-SMB sync 限制导致的误判，仅在卷真正无响应时触发重连恢复
-- **随处可用** — 通过 Tailscale 远程访问家里的存储
-- **双模式** — 同时支持 SMB（局域网）和 Rclone（云存储/远程）
-- **极速挂载** — 跳过网络镜像低效校验，APFS 磁盘映像挂载速度提升 3 倍
+**核心特性（v3.0.2）：**
+- **免用户名安装器** — 自动识别 HOME/UID，迁移旧版 launchd Label，并保留本地设置
+- **独立 SMB / Rclone 工作进程** — APFS 故障不会导致正常网络挂载停止
+- **真实 APFS 写入校验** — 随机 4 KiB 临时文件，执行创建、写入、fsync、读回和清理；不再用 `df` 假装可写
+- **自动选择 DiskImages2** — macOS 支持时优先 `diskutil image attach`，旧系统保留 `hdiutil`；新后端失败不回退到旧后端
+- **保守恢复** — UUID 与物理存储核验、空闲状态检查、正常卸载、冷却期，必要时经备份授权进行离线 First Aid
+- **Tailscale 支持** — 网络等待与重试，不将 Mac 用户名写死
+
+**注意：** 网络上的 APFS sparsebundle 不能完全等同本地 SSD；NAS 空间、连接稳定性与备份仍然重要。大型镜像即使已显示挂载，`diskutil image attach` 也可能继续统计 band 文件数分钟。
 
 ---
 
@@ -66,17 +73,22 @@ Mac 存储空间**太贵了** — 升级 1TB 要多花 ¥1500+。LazyMount 帮�
 
 ```mermaid
 graph TD
-    Boot["macOS 开机 / 用户登录"] --> Launchd["Launchd 守护进程 (com.lazymount.plist)"]
-    Launchd --> Script["mount_manager.sh (v2.4)"]
-    Script --> NetCheck{"网络连通性与 Tailscale 探测"}
-    NetCheck -- 畅通 --> Mounts["执行挂载流程"]
-    NetCheck -- 异常 --> Retry["指数退避重试 (Exponential Backoff)"]
-    Mounts --> SMB["SMB 局域网/远程文件共享"]
-    Mounts --> Rclone["Rclone VFS (SFTP/WebDAV/云端)"]
-    SMB --> APFS["挂载 APFS Sparsebundle (-noverify 极速模式)"]
-    APFS --> HealthMon["后台 APFS 健康探测守护进程"]
-    HealthMon -- 超时 / 卡死 --> AutoHeal["自动卸载故障卷并无缝重新接入"]
-    HealthMon -- 正常 --> Notify["系统级桌面挂载通知"]
+    Login["macOS 用户登录"] --> Agent["launchd: com.lazymount"]
+    Agent --> Runtime["Python v3 运行时与互斥锁"]
+    Runtime --> SMB["SMB 挂载工作进程"]
+    Runtime --> Rclone["Rclone 工作进程"]
+    Runtime --> APFS["APFS 卷 UUID 与镜像身份核验"]
+    APFS --> Backend{"支持 DiskImages2?"}
+    Backend -- 是 --> Modern["diskutil image attach"]
+    Backend -- 否 --> Legacy["hdiutil 传统接口"]
+    Modern --> Probe["独立文件创建、fsync、读回"]
+    Legacy --> Probe
+    Probe -- 成功 --> Healthy["Healthy / Verified"]
+    Probe -- 失败 --> Degraded["Degraded：分类错误码"]
+    Degraded --> Safe["检查占用，正常卸载和冷却"]
+    Safe --> Backup{"已确认备份并授权?"}
+    Backup -- 是 --> Aid["离线 verify / 必要时 repair"]
+    Backup -- 否 --> Degraded
 ```
 
 ---
@@ -169,10 +181,7 @@ nano ~/Scripts/mount_manager.local.sh
 **设置方法：**
 
 ```bash
-# 复制示例配置
-cp mount_manager.example.local.sh ~/Scripts/mount_manager.local.sh
-
-# 编辑你的配置
+# 安装器会自动生成，已有配置不能覆盖
 nano ~/Scripts/mount_manager.local.sh
 ```
 
@@ -696,3 +705,7 @@ MIT License - 详见 [LICENSE](LICENSE)。
 ---
 
 **为拒绝支付苹果存储税的 Mac 用户而做 ❤️**
+
+### v3.0.2 挂载后端
+
+优先检测并使用 `diskutil image attach`（DiskImages2），仅旧系统没有此能力时使用 hdiutil。新版连接失败不会自动回退旧后端。同一 NAS 实测发现旧 DiskImages 的 band F_FULLSYNC 返回 ENOTSUP，而新版后端通过写入、fsync、读回和正常弹出。v3.0.2 取消强制 `owners`：受影响镜像的卷根目录原本属于 root，强制启用 ownership 使创建文件出现 EACCES (13)，即使用户拥有的游戏子目录可以读写。恢复 macOS 默认的 ownership 语义后，实际镜像由 LaunchAgent 自动挂载，卷根目录写入、fsync 和读回均成功。不要擅自批量变更用户磁盘 ACL 或文件所有者。

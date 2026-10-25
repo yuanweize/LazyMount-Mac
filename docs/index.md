@@ -15,7 +15,7 @@ canonical: https://yuanweize.github.io/LazyMount-Mac/
 ### High-Intent Troubleshooting & Deep Dives
 
 1. **[Fixing Steam Disk Write Error on macOS](troubleshooting/steam-disk-write-error-macos.md)**  
-   Comprehensive diagnosis and recovery for corrupted APFS sparsebundles stored over SMB shares. Resolve `EROFS`, `EACCES`, and journal lock errors.
+   Diagnose ENOTSUP, EROFS, EACCES, and real I/O failures without assuming filesystem corruption. Covers safe reattachment and read/write verification.
 
 2. **[APFS Sparsebundle NAS Recovery & Optimization](guides/apfs-sparsebundle-nas-recovery.md)**  
    Plist/UUID identity, verified writes, normal reattachment, backup-gated offline repair, and correct fsck parameter semantics.
@@ -36,9 +36,10 @@ graph LR
     LaunchdAgent --> Script["mount_manager.sh"]
     Script --> SocketCheck{"Socket Health Check"}
     SocketCheck -- Reachable --> MountSMB["Mount SMB Shares"]
-    MountSMB --> APFSAttach["Attach APFS (-noverify)"]
-    APFSAttach --> LivenessWatchdog["Liveness Probe (df)"]
-    LivenessWatchdog -- Unresponsive --> SelfHeal["Auto Repair & Reattach"]
+    MountSMB --> APFSAttach["DiskImages2 when supported"]
+    APFSAttach --> LivenessWatchdog["4 KiB write / fsync / readback"]
+    LivenessWatchdog -- IO Failure --> SelfHeal["Idle check + normal reattach"]
+    SelfHeal --> Approval["Backup-gated offline repair, if needed"]
 ```
 
 ---
@@ -50,15 +51,23 @@ graph LR
 git clone https://github.com/yuanweize/LazyMount-Mac.git
 cd LazyMount-Mac
 
-# Copy local configuration template
-cp mount_manager.example.local.sh mount_manager.local.sh
+# Install the per-user LaunchAgent and preserve any existing local settings
+./install.sh install
 
-# Edit configuration with your share details
-nano mount_manager.local.sh
+# Set SMB, APFS, and/or Rclone settings without hardcoded usernames
+nano ~/Scripts/mount_manager.local.sh
 
-# Test non-destructively
-./mount_manager.sh
+# Activate and inspect
+./install.sh restart
+./install.sh status
+tail -n 40 ~/Library/Logs/LazyMount/manager.log
 ```
+
+---
+
+## 📄 Release notes and validation
+
+Read [CHANGELOG](../CHANGELOG.md) for v3.0.0–v3.0.2 migration and [the v3 validation report](validation-v3.md) for real-image testing, ownership regression, and remaining limits.
 
 ---
 
