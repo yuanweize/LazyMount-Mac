@@ -145,28 +145,18 @@ graph TD
 
 ### Quick Start
 
+Requires Python 3.9+ (python.org or Homebrew) and macOS with APFS support. The installer handles Intel / Apple Silicon paths. Run as your login user without sudo. New installations start with mount modules disabled; enable them in your local config. Existing settings and Keychain are preserved.
+
 ```bash
-# 1. Clone the repository
 git clone https://github.com/yuanweize/LazyMount-Mac.git
 cd LazyMount-Mac
-
-# 2. Copy script to your Scripts folder
-mkdir -p ~/Scripts
-cp mount_manager.sh ~/Scripts/
-chmod +x ~/Scripts/mount_manager.sh
-
-# 3. (Recommended) Create local config file to avoid modifying the main script
-cp mount_manager.example.local.sh ~/Scripts/mount_manager.local.sh
-nano ~/Scripts/mount_manager.local.sh  # Edit with your settings
-
-# 4. Install LaunchAgent for auto-start
-cp com.lazymount.plist ~/Library/LaunchAgents/com.lazymount.plist
-# Edit the plist to use your username:
-sed -i '' "s/YOUR_USERNAME/$(whoami)/g" ~/Library/LaunchAgents/com.lazymount.plist
-
-# 5. Load the LaunchAgent service
-launchctl load ~/Library/LaunchAgents/com.lazymount.plist
+./install.sh install
+nano ~/Scripts/mount_manager.local.sh
+./install.sh restart
+./install.sh status
 ```
+
+The installer resolves HOME/UID, generates `com.lazymount`, and migrates old services by their actual plist Label. Do not copy the repository plist template directly. `SMB_USER` is the network account, independent of your Mac login name.
 
 ---
 
@@ -261,25 +251,20 @@ RCLONE_IP="100.x.x.x"            # IP to ping (use Tailscale IP for remote)
 For mounting disk images stored on the SMB share:
 
 ```bash
-BUNDLE_PATH="$SMB_MOUNT_POINT/Storage.sparsebundle"
+BUNDLE_PATH="/Volumes/$SMB_SHARE/Storage.sparsebundle"
 BUNDLE_VOLUME_NAME="ExternalStorage"
 ```
 
 ### Auto-Update
 
-The script can automatically check for updates from GitHub on each startup.
+v3 replaces the unsafe single-file background updater. Legacy `AUTO_UPDATE_ENABLED` is ignored. Update your full checkout, then run:
 
 ```bash
-AUTO_UPDATE_ENABLED="true"    # Set to "false" to disable
+git pull --ff-only
+./install.sh update
 ```
 
-When enabled, the script will:
-1. Fetch the latest version from GitHub on startup
-2. Compare the remote `SCRIPT_VERSION` with the local version
-3. If a new version is available, download and replace the script automatically
-4. Save a backup as `mount_manager.sh.backup` before updating
-
-> **Note:** After an update, the script logs a message to restart. The new version takes effect on the next launch.
+The installer backs up the old version, preserves configuration, migrates and restarts the service.
 
 ---
 
@@ -475,7 +460,7 @@ LLM models need to be loaded into RAM before inference. If your model isn't in l
 If you want Ollama to start automatically at boot and serve models from your network drive (0.0.0.0), use the provided plist:
 
 1. **Edit the plist:**
-   Open `com.ollama.startup.plist` and change `/Users/YOUR_USERNAME/.ollama/models` to your actual mount path (e.g., `/Users/yuanweize/Mounts/Server/ai-models`).
+   Open `com.ollama.startup.plist` and change `/Volumes/ModelStorage/ai-models` to your actual mount path (e.g., `/Volumes/ModelStorage/ai-models`).
 
 2. **Install:**
    ```bash
@@ -568,20 +553,12 @@ rclone ls homeserver:/
 ### Step 5: Download and Configure LazyMount
 
 ```bash
-# Create Scripts folder
-mkdir -p ~/Scripts
-
-# Download the script
-curl -o ~/Scripts/mount_manager.sh https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/mount_manager.sh
-
-# Make it executable
-chmod +x ~/Scripts/mount_manager.sh
-
-# Open in TextEdit
-open -e ~/Scripts/mount_manager.sh
+# From a full LazyMount-Mac checkout:
+./install.sh install
+open -e ~/Scripts/mount_manager.local.sh
 ```
 
-**In the script, find and edit these lines:**
+**Set these values in your local configuration:**
 
 ```bash
 # === RCLONE SETTINGS ===
@@ -616,7 +593,7 @@ The script will now connect using the stored credentials.
 ~/Scripts/mount_manager.sh
 
 # Watch the log in real-time (open a new terminal window)
-tail -f /tmp/mount_manager.log
+tail -f ~/Library/Logs/LazyMount/manager.log
 
 # You should see:
 # === Mount Session Started: ... ===
@@ -628,17 +605,8 @@ tail -f /tmp/mount_manager.log
 ### Step 8: Set Up Auto-Start at Login
 
 ```bash
-# Download the LaunchAgent plist
-curl -o ~/Library/LaunchAgents/com.lazymount.plist https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/com.lazymount.plist
-
-# Replace YOUR_USERNAME with your actual username
-sed -i '' "s/YOUR_USERNAME/$(whoami)/g" ~/Library/LaunchAgents/com.lazymount.plist
-
-# Load it (starts immediately)
-launchctl load ~/Library/LaunchAgents/com.lazymount.plist
-
-# Verify it's running
-launchctl list | grep lazymount
+./install.sh install
+./install.sh status
 ```
 
 ### Step 9: Verify Everything Works
@@ -653,7 +621,7 @@ ls /Volumes/
 ls ~/Mounts/
 
 # View recent logs:
-tail -20 /tmp/mount_manager.log
+tail -20 ~/Library/Logs/LazyMount/manager.log
 ```
 
 **Setup Complete.** Your storage will now auto-mount every time you log in.
@@ -663,22 +631,14 @@ tail -20 /tmp/mount_manager.log
 ## Management Commands
 
 ```bash
-# Check status
-launchctl list | grep lazymount
-
-# View logs
-tail -f /tmp/mount_manager.log
-
-# Restart the service
-launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
-launchctl load ~/Library/LaunchAgents/com.lazymount.plist
-
-# Stop the service
-launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
-
-# Manual mount (for testing)
-~/Scripts/mount_manager.sh
+./install.sh status
+./install.sh restart
+./install.sh update
+./install.sh uninstall
+tail -f ~/Library/Logs/LazyMount/manager.log
 ```
+
+Uninstall stops and removes the LaunchAgent, retaining settings, credentials and data.
 
 ---
 
@@ -703,34 +663,18 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 ### Q: How do I unmount manually?
 ```bash
 # Rclone
-diskutil unmount force ~/Mounts/CloudStorage
+diskutil unmount ~/Mounts/CloudStorage
 ```
 
 ---
 
 ## Known Issues
 
-### APFS Sparse Bundle & Reboot
-If your Mac is not shut down gracefully (e.g., power loss, forced reboot), the APFS sparse bundle used for Game Libraries might report data verification issues. This can cause the volume to become **read-only** or refuse to write data.
+v3 creates a dedicated 4 KiB file, writes, fsyncs, reads back and removes it. An already-mounted unwritable volume enters `Degraded`; neither `df` nor writable mount flags prove health. Permission, capacity, read-only, I/O, sync and timeout failures are distinguished. A sync failure alone is not evidence of corruption. Normal mounts do not run First Aid; recovery has a one-hour default cooldown.
 
-**Workaround:**
-1. Open **Disk Utility**.
-2. Select the mounted volume (e.g., `SteamLibrary`).
-3. Click **First Aid** and let it run.
-4. Once verified, it will work normally again.
+Recovery checks open handles and only performs normal unmount/reattach. It never force-ejects or kills games. Plists link the image path, physical stores, container and volume UUID; device IDs are resolved again before operations. Before filesystem repair, confirm a recoverable backup and set `BUNDLE_REPAIR_APPROVED_UUID` to that volume UUID. Without approval, only normal reattach is attempted. Nonzero repair status stays Degraded.
 
-*Note: Standard SMB, Rclone, and SFTP mounts are not affected by this issue.*
-
-### APFS-over-SMB Sync Limitation (v2.3 Fix)
-APFS filesystem on SMB backing store has a known limitation: APFS periodic `sync()` calls fail with `ENOTSUP` because SMB doesn't support the required fsync semantics. This causes kernel errors like:
-
-```
-apfs_vfsop_sync:5310: disk5s1 disk5: failed to finish all transactions in sync() - Operation not supported(45)
-```
-
-**Impact:** `touch` and other write commands intermittently fail on APFS-over-SMB volumes, even when the volume is healthy. Previous versions (v2.1–v2.2) used `touch` for health checks, causing **false positives** that triggered unnecessary detach/re-attach cycles.
-
-**v2.3 Fix:** Health monitor now uses `df` (reads mount metadata, no sync triggered) instead of `touch`. Post-mount check uses `mount` flags to detect `read-only` state. This eliminates false positives while still catching genuine volume failures.
+The old claim that all APFS-over-SMB write failures are harmless sync limitations is incorrect. Investigate ENOTSUP at its actual failing stage. See the [APFS recovery guide](docs/guides/apfs-sparsebundle-nas-recovery.md) for command semantics and recovery limits.
 
 ---
 

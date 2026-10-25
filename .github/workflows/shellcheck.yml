@@ -23,3 +23,8 @@ jobs:
           scandir: '.'
           ignore_paths: '.venv'
           severity: error
+
+      - name: Shell syntax
+        run: bash -n mount_manager.sh install.sh mount_manager.example.local.sh
+      - name: Python unit tests
+        run: python3 -m unittest discover -s tests -v

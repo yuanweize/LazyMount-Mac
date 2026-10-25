@@ -140,28 +140,18 @@ graph TD
 
 ### 快速开始
 
+需要 Python 3.9+（python.org 或 Homebrew）、macOS APFS 支持。安装器支持 Intel / Apple Silicon 路径，以当前登录用户运行，不使用 sudo。首次安装默认关闭挂载模块；编辑本地配置启用。已有设置和 Keychain 保持不变。
+
 ```bash
-# 1. 克隆仓库
 git clone https://github.com/yuanweize/LazyMount-Mac.git
 cd LazyMount-Mac
-
-# 2. 复制脚本到 Scripts 文件夹
-mkdir -p ~/Scripts
-cp mount_manager.sh ~/Scripts/
-chmod +x ~/Scripts/mount_manager.sh
-
-# 3. (推荐) 创建本地配置文件，避免直接修改主脚本
-cp mount_manager.example.local.sh ~/Scripts/mount_manager.local.sh
-nano ~/Scripts/mount_manager.local.sh  # 编辑你的配置
-
-# 4. 安装 LaunchAgent 实现开机自启
-cp com.lazymount.plist ~/Library/LaunchAgents/com.lazymount.plist
-# 把 YOUR_USERNAME 替换成你的用户名：
-sed -i '' "s/YOUR_USERNAME/$(whoami)/g" ~/Library/LaunchAgents/com.lazymount.plist
-
-# 5. 加载 LaunchAgent 服务
-launchctl load ~/Library/LaunchAgents/com.lazymount.plist
+./install.sh install
+nano ~/Scripts/mount_manager.local.sh
+./install.sh restart
+./install.sh status
 ```
+
+安装器自动识别 HOME、UID，生成 `com.lazymount`，按 plist 实际 Label 迁移旧服务。不要直接复制仓库内的 plist 模板。网络账号 `SMB_USER` 与 Mac 登录用户名独立。
 
 ---
 
@@ -190,7 +180,7 @@ nano ~/Scripts/mount_manager.local.sh
 
 ```bash
 # --- 全局设置 ---
-# AUTO_UPDATE_ENABLED="true"                     # 设为 "false" 禁用自动更新
+# v3 更新使用 ./install.sh update
 
 # --- Rclone 配置 ---
 RCLONE_REMOTE="myremote:/path/to/folder"
@@ -256,30 +246,20 @@ RCLONE_IP="100.x.x.x"            # 用于网络检测的 IP（远程访问时用
 用于挂载存放在 SMB 共享上的磁盘映像：
 
 ```bash
-BUNDLE_PATH="$SMB_MOUNT_POINT/Storage.sparsebundle"
+BUNDLE_PATH="/Volumes/$SMB_SHARE/Storage.sparsebundle"
 BUNDLE_VOLUME_NAME="ExternalStorage"
 ```
 
 ### 自动更新
 
-脚本可以在每次启动时自动从 GitHub 检查更新。
+v3 不再后台替换单个脚本，旧 `AUTO_UPDATE_ENABLED` 设置不生效。更新完整仓库后运行：
 
 ```bash
-AUTO_UPDATE_ENABLED="true"    # 设为 "false" 禁用自动更新
+git pull --ff-only
+./install.sh update
 ```
 
-启用后，脚本会：
-1. 启动时从 GitHub 获取最新版本
-2. 比较远程 `SCRIPT_VERSION` 与本地版本
-3. 如果有新版本，自动下载并替换脚本
-4. 更新前保存备份为 `mount_manager.sh.backup`
-
-> **注意：** 更新后，脚本会记录日志提示重启。新版本将在下次启动时生效。
-
-> **⚠️ 游戏特别说明：**
-> *   Steam/Epic 游戏库 **必须** 使用 APFS 稀疏磁盘映像才能正常工作。
-> *   **LOL (英雄联盟)** 不支持存放在网络驱动器或 APFS 磁盘映像中（必须使用本地磁盘或 iSCSI）。
-
+安装器备份旧版本、保留配置、迁移并重启服务。
 
 ---
 
@@ -470,7 +450,7 @@ RCLONE_IP="192.168.1.10"
 如果你希望 Ollama 在开机时自动启动，并利用网络驱动器（NAS）存储模型，同时允许局域网访问（0.0.0.0），请使用提供的配置文件：
 
 1. **编辑配置文件：**
-   打开 `com.ollama.startup.plist`，将 `/Users/YOUR_USERNAME/.ollama/models` 修改为你的实际挂载路径（例如 `/Users/yuanweize/Mounts/Server/ai-models`）。
+   打开 `com.ollama.startup.plist`，将 `/Volumes/ModelStorage/ai-models` 修改为你的实际挂载路径（例如 `/Volumes/ModelStorage/ai-models`）。
 
 2. **安装服务：**
    ```bash
@@ -563,17 +543,9 @@ rclone ls homeserver:/
 ### 第 5 步：下载并配置 LazyMount
 
 ```bash
-# 创建 Scripts 文件夹
-mkdir -p ~/Scripts
-
-# 下载脚本
-curl -o ~/Scripts/mount_manager.sh https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/mount_manager.sh
-
-# 设置可执行权限
-chmod +x ~/Scripts/mount_manager.sh
-
-# 用文本编辑器打开编辑
-open -e ~/Scripts/mount_manager.sh
+# From a full LazyMount-Mac checkout:
+./install.sh install
+open -e ~/Scripts/mount_manager.local.sh
 ```
 
 **在脚本中找到并修改这些行：**
@@ -611,7 +583,7 @@ SMB_SHARE="SharedFolder"                       # ← 共享文件夹名
 ~/Scripts/mount_manager.sh
 
 # 在另一个终端窗口实时查看日志
-tail -f /tmp/mount_manager.log
+tail -f ~/Library/Logs/LazyMount/manager.log
 
 # 你应该能看到：
 # === Mount Session Started: ... ===
@@ -623,17 +595,8 @@ tail -f /tmp/mount_manager.log
 ### 第 8 步：设置开机自启
 
 ```bash
-# 下载 LaunchAgent 配置文件
-curl -o ~/Library/LaunchAgents/com.lazymount.plist https://raw.githubusercontent.com/yuanweize/LazyMount-Mac/main/com.lazymount.plist
-
-# 把 YOUR_USERNAME 替换成你的用户名
-sed -i '' "s/YOUR_USERNAME/$(whoami)/g" ~/Library/LaunchAgents/com.lazymount.plist
-
-# 加载它（立即生效）
-launchctl load ~/Library/LaunchAgents/com.lazymount.plist
-
-# 验证是否正在运行
-launchctl list | grep lazymount
+./install.sh install
+./install.sh status
 ```
 
 ### 第 9 步：验证一切正常
@@ -648,7 +611,7 @@ ls /Volumes/
 ls ~/Mounts/
 
 # 查看最近的日志：
-tail -20 /tmp/mount_manager.log
+tail -20 ~/Library/Logs/LazyMount/manager.log
 ```
 
 **设置完成。** 你的存储空间现在每次登录都会自动挂载。
@@ -658,22 +621,14 @@ tail -20 /tmp/mount_manager.log
 ## 管理命令
 
 ```bash
-# 查看状态
-launchctl list | grep lazymount
-
-# 查看日志
-tail -f /tmp/mount_manager.log
-
-# 重启服务
-launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
-launchctl load ~/Library/LaunchAgents/com.lazymount.plist
-
-# 停止服务
-launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
-
-# 手动运行（用于测试）
-~/Scripts/mount_manager.sh
+./install.sh status
+./install.sh restart
+./install.sh update
+./install.sh uninstall
+tail -f ~/Library/Logs/LazyMount/manager.log
 ```
+
+卸载只停止并移除 LaunchAgent，保留配置、凭据和数据。
 
 ---
 
@@ -701,34 +656,18 @@ launchctl unload ~/Library/LaunchAgents/com.lazymount.plist
 diskutil unmount /Volumes/你的共享
 
 # Rclone
-diskutil unmount force ~/Mounts/CloudStorage
+diskutil unmount ~/Mounts/CloudStorage
 ```
 
 ---
 
 ## 已知问题
 
-### APFS 稀疏磁盘映像与重启
-如果你的 Mac 在关机时没有"优雅断开"（例如断电、强制重启、死机），Steam/Epic 游戏库使用的 APFS 磁盘映像可能会出现数据校验错误。这会导致磁盘变为 **只读** 状态，或者无法写入新游戏数据。
+v3 以专用 4 KiB 文件进行创建、写入、fsync、读回和删除验证。已挂载但不可写同样进入 `Degraded`，不再以 `df` 或可写标志判定健康。权限、容量、只读、I/O、同步及超时分别记录；同步失败不被直接视为文件系统损坏。正常挂载不跑 First Aid，失败恢复默认间隔至少一小时。
 
-**解决方法：**
-1. 打开系统自带的 **磁盘工具 (Disk Utility)**。
-2. 选中挂载的卷（例如 `SteamLibrary`）。
-3. 点击顶部的 **急救 (First Aid)** 按钮并运行。
-4. 修复完成后即可恢复正常读写。
+恢复先检查打开的文件句柄，仅正常卸载并重挂，不强制弹出、不结束游戏进程。使用 plist 关联镜像路径、物理存储、容器及卷 UUID，每次操作重新解析设备编号。修复前必须确认备份并将 `BUNDLE_REPAIR_APPROVED_UUID` 设为该卷 UUID；未授权时只尝试正常重挂。修复返回码非零时保持 Degraded，不宣称成功。
 
-*注：普通的 SMB、Rclone 和 SFTP 挂载不受此问题影响。*
-
-### APFS-over-SMB Sync 限制（v2.3 修复）
-APFS 文件系统在 SMB 后端存储上有一个已知限制：APFS 定期执行的 `sync()` 调用会因 SMB 不支持所需的 fsync 语义而返回 `ENOTSUP`。这会导致内核报错：
-
-```
-apfs_vfsop_sync:5310: disk5s1 disk5: failed to finish all transactions in sync() - Operation not supported(45)
-```
-
-**影响：** `touch` 等写入命令在 APFS-over-SMB 卷上会间歇性失败，即使卷本身是健康的。旧版本（v2.1–v2.2）使用 `touch` 进行健康检查，导致**误判**触发不必要的 detach/re-attach 循环。
-
-**v2.3 修复：** 健康监控改用 `df`（读取挂载元数据，不触发 sync）替代 `touch`；挂载后检查改用 `mount` flags 检测 `read-only` 状态。这消除了误判，同时仍能捕获真正的卷故障。
+旧版本关于“所有 APFS-over-SMB 写入错误都是正常同步限制”的解释不成立。ENOTSUP 必须按失败阶段调查。详情、参数解释及人工处理边界见 [APFS 恢复指南](docs/guides/apfs-sparsebundle-nas-recovery.md)。
 
 ---
 

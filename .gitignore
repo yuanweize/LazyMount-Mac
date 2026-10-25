@@ -20,3 +20,6 @@
 
 # Personal config (if users create local copies)
 mount_manager.local.sh
+
+__pycache__/
+*.pyc

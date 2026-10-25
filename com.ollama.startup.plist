@@ -22,9 +22,9 @@
 
         <!-- OLLAMA_MODELS: PATH TO YOUR NETWORK MODELS -->
         <!-- ⚠️ CHANGE THIS PATH to your actual mounted network drive! -->
-        <!-- Example: /Users/yourname/Mounts/Server/ai-models -->
+        <!-- Example: /Volumes/ModelStorage/ai-models -->
         <key>OLLAMA_MODELS</key>
-        <string>/Users/YOUR_USERNAME/.ollama/models</string>
+        <string>/Volumes/ModelStorage/ai-models</string>
     </dict>
 
     <!-- Service settings: Auto-start and Keep-alive -->

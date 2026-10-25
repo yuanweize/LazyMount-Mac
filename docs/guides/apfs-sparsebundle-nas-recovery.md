@@ -1,109 +1,67 @@
-# APFS Sparsebundle Recovery on Network Attached Storage (NAS)
+# APFS sparsebundle detection and safe recovery (v3)
 
-## Introduction to APFS Sparsebundles over Network Shares
+A mounted APFS volume can report writable while file creation returns ENOTSUP.
+Neither directory existence, `df`, nor `diskutil info` alone proves write health.
+LazyMount tests a random exclusive 4 KiB file: create, write, fsync, reopen/read,
+compare, delete. It does not open game files. Probe deadline: 10 seconds. A
+kernel-stuck probe blocks further APFS recovery rather than overlapping operations.
 
-An **APFS sparsebundle** is Apple's segmented virtual disk format. Rather than a single monolithic file, it divides disk storage into 8MB chunks (called **bands**) stored in a directory structure:
+## State and safety
 
-```text
-VolumeName.sparsebundle/
-├── Info.bckup
-├── Info.plist
-├── bands/
-│   ├── 0
-│   ├── 1
-│   └── ... (8MB band files)
-├── token
-└── lock
-```
+`Healthy → Degraded → Recovering → Verified`; unsuccessful recovery stays Degraded.
+Permission/capacity/sync failures are reported without invoking First Aid. Timeouts
+also block recovery. I/O and read-only failures can trigger normal reattachment,
+with a persistent one-hour cooldown. The service remains alive independently of
+SMB and Rclone workers. No periodic filesystem scan and no unconditional boot repair.
 
-When stored on a remote NAS via SMB or NFS, this architecture allows dynamic capacity expansion without pre-allocating hundreds of gigabytes. However, network interruptions or unscheduled macOS reboots can leave lock markers and incomplete band commits, causing mounting errors like:
+Identity is derived from `hdiutil info -plist`, `diskutil apfs list -plist` and
+`diskutil info -plist`: exact image path, owning UID, physical stores, container,
+volume UUID and mountpoint. The first unambiguous UUID is pinned in the private
+state directory; optionally configure `BUNDLE_VOLUME_UUID` before first use.
+State/locks: `~/Library/Application Support/LazyMount`; logs:
+`~/Library/Logs/LazyMount/manager.log`. Changing the configured image's UUID requires
+reviewing and removing that image's saved state while the service is stopped.
 
-- `hdiutil: attach failed - Resource temporarily unavailable`
-- `hdiutil: attach failed - Image not recognized`
-- `Volume mounted as Read-Only (EROFS)`
+Close Steam/Epic and other writers normally. Recovery checks handles with lsof,
+then requests normal `diskutil unmountDisk`. Busy or uncertain inspection aborts;
+there is no force option, game termination, formatting, token deletion or band edit.
+Normal reattachment explicitly uses `-owners on` and validates actual writes.
 
----
+## First Aid and command semantics
 
-## Technical Recovery Workflow
+Apple recommends a current backup before First Aid, and checking volumes, then
+containers, then the device in Disk Utility. LazyMount implements the **APFS
+volume/container filesystem portion**, not every GUI check or partition-map repair.
+Disk Utility's exact private invocation is not assumed to be a stable API.
 
-### 1. Clear Orphaned Token and Lock Files
+| Command | Meaning and use |
+| --- | --- |
+| `diskutil verifyVolume` | Invokes the appropriate fsck; verifies underlying APFS storage and target volume. Can support live verification, which may block I/O. Not a cheap health probe. |
+| `diskutil repairVolume` | Invokes the filesystem repair tool and repairs underlying storage plus target volume. Requires writable media and an unmountable target; LazyMount first requires all container volumes unmounted. |
+| `fsck_apfs -n` | Verification without repair. Direct invocation needs the correct raw device and safe offline/live-mode handling. |
+| `fsck_apfs -y` | Attempts repairs; modifies metadata. Not intrinsically non-destructive. LazyMount delegates to diskutil instead. |
+| `fsck_apfs -x` | XML output. **Does not mount read-only on failure.** |
+| `hdiutil -autofsck` | Forces filesystem checking before mounting. Not used on every normal mount. |
+| `hdiutil -noautofsck` | Does not force automatic checking; does not establish filesystem health. |
+| `hdiutil -noverify` | Skips image checksum verification, not filesystem verification. v3 does not require this optimization. |
+| `hdiutil attach -nomount` | Exposes image devices without mounting volumes, for deliberate offline diagnosis. |
 
-When a client Mac disconnects abruptly, the SMB server or local cache may retain stale lock flags.
+After a failed write and unsuccessful normal reattachment, filesystem repair is
+allowed only when `BUNDLE_REPAIR_APPROVED_UUID` matches the pinned volume UUID.
+Set it in the private local config **only after confirming a recoverable backup**.
+The service then unmounts normally, verifies offline, repairs if verification
+fails, checks the repair exit status, verifies again, mounts and probes writes.
+Any failure stops the sequence. It never guesses a device number or falls back
+to repairing an arbitrary whole disk. With an already pinned and approved UUID, failed normal attachment can fall back
+to `-nomount` for offline recovery. If the image cannot attach at all or its APFS
+identity cannot be resolved, automated repair fails closed and needs manual diagnosis.
 
-Navigate to the sparsebundle bundle root on your NAS:
-```bash
-cd "/Volumes/NAS-Share/VolumeName.sparsebundle"
+If write checks still fail after a successful filesystem verification, investigate
+permissions, ownership, storage I/O and unsupported sync separately. Do not repeat
+First Aid in a tight loop. A `Verified` result proves this small file operation,
+not every game workload or survival of a NAS power loss.
 
-# Check for lock files
-ls -la token lock 2>/dev/null
-
-# Safely remove stale lock tokens (ensure no other Mac is actively mounted!)
-rm -f token lock
-```
-
-### 2. Inspect and Restore `Info.plist`
-
-If the main `Info.plist` was truncated during a network drop:
-```bash
-# Verify Info.plist integrity
-plutil -lint Info.plist
-
-# If corrupted, restore from backup:
-if [ $? -ne 0 ] && [ -f Info.bckup ]; then
-    cp -v Info.bckup Info.plist
-    plutil -lint Info.plist
-fi
-```
-
-### 3. Attach Container in Non-Mounting Raw Mode
-
-Attach the sparsebundle without mounting file systems to allow block-level repair:
-
-```bash
-hdiutil attach -nomount -noverify -noautofsck "/Volumes/NAS-Share/VolumeName.sparsebundle"
-```
-
-Output example:
-```text
-/dev/disk3          GUID_partition_scheme
-/dev/disk3s1        Apple_APFS             7053534B-0000-11AA-AA11-00306543ECAC
-/dev/disk4          Apple_APFS_Container
-/dev/disk4s1        Apple_APFS_Volume      GameStorage
-```
-
-### 4. Run `fsck_apfs` File System Integrity Repair
-
-Target the synthesized container node or specific APFS volume:
-
-```bash
-# Repair container and all member volumes
-sudo fsck_apfs -y -x /dev/disk3s1
-```
-
-Flags explained:
-- `-y`: Automatically respond 'yes' to repair inquiries
-- `-x`: Mount container read-only if repairs fail, preventing cascading damage
-
-If `fsck_apfs` returns exit code `0`, the container superblocks, object maps, and snapshot checkpoints are consistent.
-
-### 5. Detach Block Device
-
-```bash
-hdiutil detach /dev/disk3
-```
-
----
-
-## Best Practices for Network Sparsebundles
-
-1. **Optimize Band Size for SMB Performance**  
-   The default 8MB band size generates thousands of network metadata requests for large files. When creating new sparsebundles for NAS gaming or 4K video, use **64MB bands**:
-   ```bash
-   hdiutil create -size 1000g -type SPARSEBUNDLE -fs APFS -volname "FastStorage" -imagekey sparse-band-size=131072 FastStorage.sparsebundle
-   ```
-
-2. **Network MTU & SMB Multipath**  
-   Ensure your local Ethernet / Wi-Fi supports 1500 MTU (or 9000 Jumbo Frames if end-to-end Gigabit switches and NAS NICs support it) to avoid packet fragmentation during high-throughput APFS writes.
-
-3. **Deploy LazyMount-Mac for Continuous Watchdogging**  
-   LazyMount-Mac tracks network availability before attempting mount, executes clean detach during shutdowns, and automatically detects dirty states before they impact user applications.
+Sources: [Apple First Aid guide](https://support.apple.com/en-us/102611), and the
+installed macOS `man diskutil`, `man fsck_apfs`, `man hdiutil`. The command behavior
+above was checked on macOS 27.0.1; older supported APFS systems still need runtime
+qualification. Python 3.9+ is required on both Intel and Apple Silicon.

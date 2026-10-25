@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034
 
 # ==========================================
 # Local Override Config (mount_manager.local.sh)
@@ -7,7 +8,7 @@
 # This file is git-ignored, safe to store personal config.
 
 # --- Global Settings ---
-# AUTO_UPDATE_ENABLED="true"                     # Set to "false" to disable auto-update from GitHub
+# Updates: run ./install.sh update from an updated repository checkout.
 
 # --- Rclone Configuration ---
 # RCLONE_ENABLED="true"                          # Set to "false" to disable Rclone mounting
@@ -26,3 +27,9 @@ SMB_SHARE="SharedFolder"                         # Share folder name
 # NOTE: BUNDLE_PATH depends on $SMB_SHARE — make sure SMB_SHARE is defined above.
 BUNDLE_PATH="/Volumes/$SMB_SHARE/my_secure_disk.sparsebundle"
 BUNDLE_VOLUME_NAME="MyPrivateDisk"
+
+# Optional identity pin and explicit backup approval. Leave approval empty by default.
+BUNDLE_VOLUME_UUID=""
+BUNDLE_REPAIR_APPROVED_UUID=""
+BUNDLE_CHECK_INTERVAL=300
+BUNDLE_RECOVERY_COOLDOWN=3600

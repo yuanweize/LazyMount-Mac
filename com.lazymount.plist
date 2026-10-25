@@ -2,39 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!--
-        LazyMount LaunchAgent Configuration
-        
-        This plist configures macOS to automatically run mount_manager.sh
-        at login and restart it if it crashes.
-        
-        Installation:
-        1. Copy to ~/Library/LaunchAgents/
-        2. Rename to com.lazymount.plist
-        3. Edit YOUR_USERNAME to your actual macOS username
-        4. Run: launchctl load ~/Library/LaunchAgents/com.lazymount.plist
-    -->
-    
-    <key>Label</key>
-    <string>com.lazymount</string>
-    
-    <key>ProgramArguments</key>
-    <array>
-        <string>/bin/bash</string>
-        <!-- IMPORTANT: Replace YOUR_USERNAME with your actual macOS username -->
-        <string>/Users/YOUR_USERNAME/Scripts/mount_manager.sh</string>
-    </array>
-    
-    <!-- Start automatically at login -->
-    <key>RunAtLoad</key>
-    <true/>
-    
-    <!-- Restart if the script exits (network failure, rclone crash, etc.) -->
-    <key>KeepAlive</key>
-    <true/>
-    
-    <!-- Wait 10 seconds before restarting to avoid rapid restart loops -->
-    <key>ThrottleInterval</key>
-    <integer>10</integer>
+    <!-- Installer supplies absolute ProgramArguments, HOME and Python path. -->
+    <key>Label</key><string>com.lazymount</string>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>ThrottleInterval</key><integer>30</integer>
+    <!-- Allow an active offline repair to finish on normal service shutdown. -->
+    <key>ExitTimeOut</key><integer>0</integer>
 </dict>
 </plist>

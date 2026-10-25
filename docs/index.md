@@ -18,7 +18,7 @@ canonical: https://yuanweize.github.io/LazyMount-Mac/
    Comprehensive diagnosis and recovery for corrupted APFS sparsebundles stored over SMB shares. Resolve `EROFS`, `EACCES`, and journal lock errors.
 
 2. **[APFS Sparsebundle NAS Recovery & Optimization](guides/apfs-sparsebundle-nas-recovery.md)**  
-   Understanding APFS band structures, fixing truncated `Info.plist`, clearing orphaned lock files, and running non-destructive `fsck_apfs` containers.
+   Plist/UUID identity, verified writes, normal reattachment, backup-gated offline repair, and correct fsck parameter semantics.
 
 3. **[Automounting SMB Shares on macOS Using Launchd](guides/macos-automount-smb-launchd.md)**  
    Overcoming Finder login item limitations with reliable, headless LaunchAgents, sleep/wake network checks, and macOS Keychain integration.
